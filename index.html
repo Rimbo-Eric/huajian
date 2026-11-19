@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7ede6">
+<title>花笺 · 亲手插一束花</title>
+<meta name="description" content="亲手插一束花，写一句话，生成链接送给最在意的人。">
+<style>
+:root{
+  --ink:#3a2a2d;--muted:#8f7b78;--accent:#a94a58;--accent-soft:#f6e1e3;--paper:#fffbf7;--line:rgba(90,50,55,.13);
+  --serif:"Songti SC","STSong","Noto Serif SC","Noto Serif CJK SC","Source Han Serif SC","Source Han Serif CN",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --bga:#f8f1ea;--bgb:#ead9cf;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--sans);color:var(--ink);background:radial-gradient(120% 80% at 50% 30%,var(--bga),var(--bgb));background-attachment:fixed;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+input,textarea{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+img{-webkit-user-drag:none;user-select:none}
+
+/* ---------- 编辑器 ---------- */
+.app{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px 4px}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand b{font-family:var(--serif);font-weight:600;font-size:22px;letter-spacing:3px}
+.brand span{font-family:var(--serif);font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acts{display:flex;gap:6px;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 15px;border-radius:999px;font-size:13.5px;white-space:nowrap;transition:transform .15s,background .2s}
+.btn:active{transform:scale(.96)}
+.btn svg{width:16px;height:16px;flex-shrink:0}
+.ghost{background:rgba(255,255,255,.72);box-shadow:inset 0 0 0 1px var(--line)}
+.ghost:hover{background:#fff}
+.primary{background:var(--accent);color:#fff;box-shadow:0 8px 18px -8px rgba(169,74,88,.75)}
+.primary:hover{background:#963d4a}
+@media (max-width:640px){.brand span{display:none}.acts .ghost .lbl{display:none}.acts .ghost{width:36px;padding:0}}
+.work{flex:1;min-height:0;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:200px}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none}
+#cv .it{cursor:grab}
+.ov{position:absolute;display:flex;gap:6px;align-items:center;z-index:2}
+.ov.tl{left:14px;top:6px}.ov.tr{right:14px;top:6px}.ov.bl{left:14px;bottom:10px}
+.count{font-size:12px;color:var(--muted);background:rgba(255,255,255,.62);padding:5px 11px;border-radius:999px}
+.ib{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.78);box-shadow:inset 0 0 0 1px var(--line);display:grid;place-items:center}
+.ib svg{width:16px;height:16px}
+.ib:disabled{opacity:.4;cursor:default}
+.chip{height:32px;padding:0 13px;border-radius:999px;background:rgba(255,255,255,.82);box-shadow:inset 0 0 0 1px var(--line);font-size:13px}
+.chip:hover{background:#fff}
+.hint{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-family:var(--serif);color:var(--muted);font-size:14px;text-align:center;line-height:1.9;pointer-events:none;background:rgba(255,255,255,.62);padding:12px 18px;border-radius:16px;white-space:nowrap}
+.loading{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);color:var(--muted);font-size:14px;z-index:5}
+.panel{position:relative;z-index:3;background:rgba(255,251,248,.95);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:22px 22px 0 0;box-shadow:0 -10px 30px -14px rgba(90,40,50,.28);padding:10px 12px calc(12px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;max-height:46vh;max-height:46dvh}
+@media (min-width:900px){.work{flex-direction:row}.panel{width:430px;max-height:none;border-radius:22px;margin:4px 16px 16px 0;padding:14px}}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex-shrink:0;height:30px;padding:0 12px;border-radius:999px;font-size:13px;color:var(--muted)}
+.tabs button.on{background:var(--ink);color:#fff}
+.tabbody{overflow:auto;min-height:0;padding:2px}
+.grid{display:grid;grid-auto-flow:column;grid-auto-columns:80px;gap:8px;overflow-x:auto;padding:2px 2px 6px}
+@media (min-width:900px){.grid{grid-auto-flow:row;grid-template-columns:repeat(4,1fr);overflow:visible}}
+.fl{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px 6px;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 1px var(--line);transition:transform .15s,box-shadow .15s}
+.fl:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 1px rgba(169,74,88,.35)}
+.fl:active{transform:scale(.95)}
+.fl img{width:58px;height:58px;object-fit:contain}
+.fl span{font-size:12px}
+.tip{font-size:12px;color:var(--muted);margin:6px 2px 0;line-height:1.6}
+.seled{position:absolute;left:12px;right:12px;bottom:10px;max-width:440px;margin:0 auto;z-index:4;background:rgba(255,255,255,.97);border-radius:16px;box-shadow:0 12px 30px -12px rgba(90,40,50,.35),inset 0 0 0 1px var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;animation:pop .22s ease-out;color:#3a2a2d}
+.se-h{display:flex;align-items:baseline;gap:8px}
+.se-h b{font-family:var(--serif);font-size:17px}
+.se-h i{font-family:var(--serif);font-size:12.5px;color:var(--accent)}
+.se-h .x{margin-left:auto;color:var(--muted);font-size:20px;line-height:1;width:24px}
+.sw{display:flex;gap:8px;flex-wrap:wrap}
+.sw button{width:26px;height:26px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.sw button.on{outline:2px solid var(--ink);outline-offset:2px}
+.se-r{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.se-r input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}
+.se-b{display:flex;gap:6px}
+.se-b button{flex:1;height:30px;border-radius:10px;background:#f6efeb;font-size:12.5px}
+.se-b .del{color:var(--accent)}
+.seg{display:inline-flex;background:#f3ebe7;border-radius:999px;padding:3px;margin-bottom:10px}
+.seg button{height:28px;padding:0 14px;border-radius:999px;font-size:13px;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.opts{display:flex;gap:10px;flex-wrap:wrap}
+.opt{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:12px;color:var(--muted);min-width:52px}
+.opt i{width:50px;height:50px;border-radius:13px;display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.09);background:#fff center/cover no-repeat;overflow:hidden}
+.opt i img{width:44px;height:44px;object-fit:contain}
+.opt.on i{outline:2px solid var(--ink);outline-offset:2px}
+.opt.on{color:var(--ink)}
+.lab{font-size:12.5px;color:var(--muted);margin:12px 2px 8px}
+.field{display:flex;flex-direction:column;gap:6px;margin-top:12px;font-size:12.5px;color:var(--muted);min-width:0}
+.field input,.field textarea{border:0;background:#fff;box-shadow:inset 0 0 0 1px var(--line);border-radius:12px;padding:10px 12px;font-size:15px;outline:none;width:100%;resize:none;min-width:0}
+.field input:focus,.field textarea:focus{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.fh{display:flex;justify-content:space-between;align-items:center}
+.mini{font-size:12px;color:var(--accent)}
+
+/* ---------- 弹窗 ---------- */
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(40,25,28,.34);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);padding:16px;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.sheet{width:min(440px,100%);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;background:var(--paper);border-radius:22px;padding:22px 20px 20px;box-shadow:0 30px 60px -20px rgba(60,20,30,.45);position:relative;animation:pop .28s cubic-bezier(.2,.9,.3,1.2);color:#3a2a2d}
+@keyframes pop{from{transform:translateY(16px) scale(.97);opacity:0}}
+.sheet h3{font-family:var(--serif);font-size:22px;margin:0 0 4px;font-weight:600}
+.sub{font-size:13px;color:#8f7b78;margin:0;line-height:1.6}
+.close{position:absolute;right:12px;top:10px;font-size:24px;color:#8f7b78;width:36px;height:36px}
+.langline{font-family:var(--serif);font-size:13px;color:var(--accent);background:var(--accent-soft);border-radius:10px;padding:9px 12px;margin:12px 0 0;line-height:1.6}
+.row2{display:flex;gap:10px}.row2 .field{flex:1}
+.wide{width:100%;height:46px;font-size:15px;margin-top:18px}
+.result{margin-top:14px;padding:12px;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
+.result b{font-size:14px}
+.result input{width:100%;margin:8px 0;border:0;background:#f7f1ee;border-radius:10px;padding:9px 10px;font-size:12px;color:#8f7b78;outline:none}
+.res-b{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 8px}
+.res-b .btn{flex:1}
+.occ{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.occ button{height:68px;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:13.5px}
+.occ button:hover{box-shadow:inset 0 0 0 1px rgba(169,74,88,.4)}
+.occ em{font-style:normal;font-size:20px}
+.hist{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:10px;margin-top:14px}
+.hcard{background:#fff;border-radius:14px;box-shadow:inset 0 0 0 1px var(--line);padding:8px;display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:0}
+.hcard .th{border-radius:10px;aspect-ratio:400/520;overflow:hidden}
+.hcard .th svg{width:100%;height:100%;display:block}
+.hcard b{font-family:var(--serif);font-size:13px}
+.hcard p{margin:0;color:#8f7b78;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcard .hb{display:flex;gap:4px}
+.hcard .hb button{flex:1;height:26px;border-radius:8px;background:#f6efeb;font-size:11.5px}
+.empty{color:#8f7b78;font-size:13px;text-align:center;padding:30px 0}
+.img-sheet img{width:100%;border-radius:14px;margin:12px 0 4px;display:block;box-shadow:0 10px 30px -14px rgba(60,20,30,.4);-webkit-touch-callout:default;user-select:auto}
+.toast{position:fixed;left:50%;bottom:calc(34px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:rgba(45,30,33,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:90;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+/* ---------- 收花页 ---------- */
+.viewer{min-height:100vh;min-height:100dvh;position:relative;overflow-x:hidden;padding-bottom:20px}
+.v-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;position:relative;z-index:6}
+.v-top .brand b{font-size:19px}
+.v-stage{position:relative;width:min(540px,100%);height:min(64vh,660px);margin:0 auto}
+#vcv{width:100%;height:100%;display:block}
+.pre .it,.pre .wb,.pre .wf,.pre .vf,.pre .rb,.pre .tag,.pre .gp,.pre .sb,.pre .lc{opacity:0}
+.v-card{position:relative;z-index:4;width:min(440px,calc(100% - 32px));margin:-64px auto 28px;background:rgba(255,252,248,.96);border-radius:20px;padding:24px 24px 16px;box-shadow:0 24px 50px -24px rgba(80,30,40,.38);opacity:0;transform:translateY(26px);transition:opacity .9s,transform .9s cubic-bezier(.2,.8,.2,1);color:#3a2a2d}
+.v-card.show{opacity:1;transform:none}
+.v-to{font-family:var(--serif);font-size:19px;font-weight:600;margin-bottom:10px}
+.v-msg{font-family:var(--serif);font-size:16.5px;line-height:1.95;white-space:pre-wrap;min-height:1.95em;color:#4a383a;word-break:break-word}
+.v-msg .cur{display:inline-block;width:1px;height:1em;background:#a94a58;vertical-align:-2px;margin-left:1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.v-from{font-family:var(--serif);font-style:italic;text-align:right;color:#8f7b78;margin-top:10px;min-height:1.4em}
+.v-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px dashed rgba(90,50,55,.18);font-size:12px;color:#8f7b78}
+.v-lang{color:#a94a58;font-size:12.5px;white-space:nowrap}
+.v-langs{display:grid;gap:8px;margin-top:12px}
+.v-langs div{display:flex;align-items:center;gap:10px;font-size:13px;color:#4a383a}
+.v-langs img{width:38px;height:38px;object-fit:contain;flex-shrink:0}
+.v-langs b{font-family:var(--serif);font-weight:600;margin-right:6px}
+.v-acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;width:min(440px,calc(100% - 32px));margin:0 auto;opacity:0;transition:opacity .8s .3s}
+.v-acts.show{opacity:1}
+.cover{position:fixed;inset:0;z-index:30;display:grid;place-items:center;text-align:center;background:radial-gradient(120% 80% at 50% 30%,var(--bga),var(--bgb));transition:opacity .9s ease,transform .9s ease;padding:24px}
+.cover.out{opacity:0;transform:scale(1.06);pointer-events:none}
+.cv-seal img{width:110px;height:110px;object-fit:contain;animation:sway 4s ease-in-out infinite;filter:drop-shadow(0 8px 12px rgba(60,30,30,.25))}
+@keyframes sway{50%{transform:rotate(6deg) translateY(-3px)}}
+.cv-s{font-family:var(--serif);font-size:14px;color:var(--muted);letter-spacing:4px;margin-top:10px}
+.cv-n{font-family:var(--serif);font-size:clamp(42px,13vw,72px);letter-spacing:8px;margin:12px 0 8px;font-weight:600;line-height:1.15;word-break:break-all}
+.cv-f{font-family:var(--serif);font-style:italic;color:var(--muted)}
+.cv-d{font-size:12.5px;color:var(--muted);margin-top:20px;letter-spacing:1px}
+.cv-btn{margin-top:30px;height:48px;padding:0 34px;font-size:15.5px;animation:breath 2.4s ease-in-out infinite}
+.cv-btn:disabled{opacity:.6;animation:none}
+@keyframes breath{50%{transform:scale(1.05)}}
+.petals{position:fixed;inset:0;pointer-events:none;z-index:5;overflow:hidden}
+.petal{position:absolute;top:-30px;border-radius:70% 0 70% 0;opacity:.9;animation-name:fall;animation-timing-function:linear;animation-fill-mode:both;box-shadow:inset -2px -2px 4px rgba(0,0,0,.12)}
+@keyframes fall{0%{transform:translate3d(0,0,0) rotate(0)}100%{transform:translate3d(var(--dx),112vh,0) rotate(var(--rot))}}
+.dark{--ink:#f4ecef;--muted:#bdb4c6;--line:rgba(255,255,255,.18)}
+.dark .ghost{background:rgba(255,255,255,.16)}
+.dark .panel{--ink:#3a2a2d;--muted:#8f7b78;--line:rgba(90,50,55,.13);color:#3a2a2d}
+.dark .count,.dark .chip,.dark .ib{background:rgba(255,255,255,.16)}
+.dark .hint{background:rgba(255,255,255,.12)}
+</style>
+</head>
+<body>
+<svg id="gdefs" width="0" height="0" style="position:absolute;width:0;height:0" aria-hidden="true"><defs id="gdefsIn"></defs></svg>
+
+<!-- ============ 编辑器 ============ -->
+<div id="editor" class="app" hidden>
+  <header class="top">
+    <div class="brand"><b>花笺</b><span>亲手插一束，送给最在意的人</span></div>
+    <div class="acts">
+      <button class="btn ghost" id="bHist" title="送过的花"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="lbl">送过的花</span></button>
+      <button class="btn ghost" id="bPreview" title="预览 ta 看到的样子"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span class="lbl">预览</span></button>
+      <button class="btn ghost" id="bSave" title="保存图片"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/></svg><span class="lbl">保存图片</span></button>
+      <button class="btn primary" id="bSend">送出去 →</button>
+    </div>
+  </header>
+  <main class="work">
+    <section class="stage">
+      <svg id="cv" viewBox="0 0 400 520" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="ov tl"><span class="count" id="count">0 枝</span></div>
+      <div class="ov tr">
+        <button class="ib" id="bUndo" title="撤销"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+        <button class="ib" id="bClear" title="清空重来"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
+      </div>
+      <div class="ov bl">
+        <button class="chip" id="bRandom">✦ 随机一束</button>
+        <button class="chip" id="bOcc">送花场合</button>
+      </div>
+      <div class="hint" id="hint">点下方的花，它就会插进花束里<br>拖动可以换位置，点一下可以换颜色</div>
+      <div class="seled" id="seled" hidden></div>
+    </section>
+    <section class="panel">
+      <nav class="tabs" id="tabs"></nav>
+      <div class="tabbody" id="tabbody"></div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ 收花页 ============ -->
+<div id="viewer" class="viewer" hidden>
+  <div class="v-top">
+    <div class="brand"><b>花笺</b></div>
+    <button class="btn ghost" id="vReplay" hidden>再开一次</button>
+  </div>
+  <div class="v-stage"><svg id="vcv" viewBox="0 0 400 520" preserveAspectRatio="xMidYMid meet" class="pre"></svg></div>
+  <div class="v-card" id="vcard">
+    <div class="v-to" id="vTo"></div>
+    <div class="v-msg" id="vMsg"></div>
+    <div class="v-from" id="vFrom"></div>
+    <div class="v-meta"><span id="vDate"></span><button class="v-lang" id="vLangBtn">这束花的花语 ›</button></div>
+    <div class="v-langs" id="vLangs" hidden></div>
+  </div>
+  <div class="v-acts" id="vActs">
+    <button class="btn ghost" id="vSave">保存图片</button>
+    <button class="btn primary" id="vReply">也送 ta 一束</button>
+  </div>
+  <div class="cover" id="cover">
+    <div>
+      <div class="cv-seal" id="cvSeal"></div>
+      <div class="cv-s">今天的花，送给</div>
+      <div class="cv-n" id="cvName"></div>
+      <div class="cv-f" id="cvFrom"></div>
+      <div class="cv-d" id="cvDate"></div>
+      <button class="btn primary cv-btn" id="cvOpen" disabled>花正在路上…</button>
+    </div>
+  </div>
+</div>
+<div class="petals" id="petals"></div>
+
+<!-- ============ 弹窗 ============ -->
+<div class="modal" id="mSend" hidden><div class="sheet">
+  <button class="close" data-close>×</button>
+  <h3>送出你的花束</h3>
+  <p class="sub">写几句话，生成一个链接。ta 点开的时候，花会一朵一朵为 ta 开。</p>
+  <div class="langline" id="sLang"></div>
+  <div class="row2">
+    <label class="field">送给<input id="sTo" maxlength="16" placeholder="ta 的名字"></label>
+    <label class="field">署名<input id="sFrom" maxlength="16" placeholder="你的名字"></label>
+  </div>
+  <label class="field"><span class="fh">想说的话<button type="button" class="mini" id="sIdea">换一句灵感</button></span><textarea id="sMsg" rows="3" maxlength="240" placeholder="今天也很想你。"></textarea></label>
+  <div class="row2">
+    <label class="field">日期<input id="sDate" type="date"></label>
+    <label class="field">在一起的第一天（选填）<input id="sStart" type="date"></label>
+  </div>
+  <button class="btn primary wide" id="sGo">生成礼物链接</button>
+  <div class="result" id="sRes" hidden>
+    <b>链接已生成 ✓</b>
+    <input id="sLink" readonly>
+    <div class="res-b">
+      <button class="btn primary" id="sCopy">复制链接</button>
+      <button class="btn ghost" id="sOpen">预览</button>
+      <button class="btn ghost" id="sImg">保存图片</button>
+    </div>
+    <p class="sub">粘贴到微信发给 ta 就行，或者贴进邮件正文。所有内容都在链接里，不经过任何服务器。</p>
+  </div>
+</div></div>
+
+<div class="modal" id="mOcc" hidden><div class="sheet">
+  <button class="close" data-close>×</button>
+  <h3>不知道怎么搭？</h3>
+  <p class="sub">选一个场合，先给你插好一束，再按心意改。</p>
+  <div class="occ" id="occList"></div>
+</div></div>
+
+<div class="modal" id="mHist" hidden><div class="sheet">
+  <button class="close" data-close>×</button>
+  <h3>送过的花</h3>
+  <p class="sub">只存在这台设备的浏览器里。</p>
+  <div class="hist" id="hList"></div>
+</div></div>
+
+<div class="modal" id="mImg" hidden><div class="sheet img-sheet">
+  <button class="close" data-close>×</button>
+  <h3>图片做好了</h3>
+  <p class="sub" id="iHint">长按图片可以保存，或者直接转发给 ta。</p>
+  <img id="iImg" alt="花束和贺卡">
+  <div class="res-b"><a class="btn primary" id="iDl" download>下载图片</a><button class="btn ghost" id="iShare" hidden>分享</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+<noscript><p style="text-align:center;padding:40px">需要开启 JavaScript 才能看到这束花。</p></noscript>
+
+<!-- 素材清单用 script 加载：直接双击打开本地文件时浏览器不允许 fetch，但允许加载脚本 -->
+<script src="assets/manifest.js"></script>
+<script>
+(()=>{
+'use strict';
+/* ================= 小工具 ================= */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const F=n=>Math.round(n*10)/10;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function mix(a,b,t){const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16);const ch=sh=>Math.round(((pa>>sh)&255)*(1-t)+((pb>>sh)&255)*t);return '#'+((1<<24)|(ch(16)<<16)|(ch(8)<<8)|ch(0)).toString(16).slice(1);}
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+const UA=navigator.userAgent,isWeChat=/MicroMessenger/i.test(UA),isMobile=/iPhone|iPad|iPod|Android|Mobile/i.test(UA);
+let toastT;function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+const pad=n=>String(n).padStart(2,'0');
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;};
+const WEEK='日一二三四五六';
+function fmtDate(s){if(!s)return '';const [y,m,d]=s.split('-').map(Number);if(!y)return '';return `${y}.${pad(m)}.${pad(d)} · 星期${WEEK[new Date(y,m-1,d).getDay()]}`;}
+function dayN(start,date){if(!start||!date)return 0;const n=Math.round((new Date(date+'T00:00:00')-new Date(start+'T00:00:00'))/86400000)+1;return n>0?n:0;}
+
+/* ================= 素材 ================= */
+let MAN={};
+const ASSET='assets/';
+let DATA=null;               // 导出图片时：素材 id -> dataURL
+const href=id=>DATA&&DATA[id]?DATA[id]:(MAN[id]?ASSET+MAN[id].f:'');
+
+/* ================= 花材 ================= */
+const c=(k,n,sw)=>[k,n,sw];
+const T={
+ ro:{n:'玫瑰',k:'main',lang:'热烈而温柔的爱',tip:'花束的主角，先放五到七朵，再围着它们搭配。',R:38,cs:[c('red','红','#a3121d'),c('pink','粉','#efa3b3'),c('blush','香槟','#f0d2c0'),c('white','白','#f4f0e6'),c('peach','蜜桃橙','#f29b62'),c('burgundy','酒红','#5a0e1d'),c('blue','蓝','#26429c'),c('lilac','浅紫','#c2a8d8')]},
+ pe:{n:'芍药',k:'main',lang:'情有独钟',tip:'花头大而蓬，一两朵就很有分量。',R:46,cs:[c('pink','粉','#ee9db3'),c('blush','浅粉','#f5d4d7'),c('white','白','#f5f1ea'),c('coral','珊瑚','#f1897a')]},
+ ra:{n:'花毛茛',k:'main',lang:'你光彩照人',tip:'层层叠叠的小圆花，塞在大花旁边。',R:33,cs:[c('cream','奶白','#f3ead6'),c('pink','粉','#f1a8b7'),c('peach','蜜桃','#f5b28b'),c('burgundy','酒红','#6c1325')]},
+ hy:{n:'绣球',k:'main',lang:'希望与团圆',tip:'一团就能铺满一片，放在下层托底。',R:44,cs:[c('white','白绿','#e4ecd0'),c('blue','蓝','#8daee0'),c('pink','粉','#efb2c5'),c('lilac','浅紫','#c2afdf')]},
+ li:{n:'洋桔梗',k:'main',lang:'真诚不变的爱',tip:'裙摆一样的花瓣，适合点缀在大花之间。',R:34,cs:[c('white','白','#f4f1ea'),c('purple','紫','#7d4fa6'),c('pink','浅粉','#f2c3cf')]},
+ ca:{n:'康乃馨',k:'main',lang:'温馨的爱与感谢',tip:'褶边花瓣，放在前排更好看。',R:32,cs:[c('pink','粉','#f09aae'),c('red','红','#b51a2b'),c('white','白','#f4f0ea')]},
+ ge:{n:'非洲菊',k:'main',lang:'互敬互爱',tip:'颜色饱和，适合生日和打气。',R:36,cs:[c('orange','橙','#f07a2a'),c('pink','粉','#ef7fa3')]},
+ su:{n:'向日葵',k:'main',lang:'沉默的爱，眼里只有你',tip:'很亮眼，配白色小花和绿叶最清爽。',R:42,cs:[c('yellow','黄','#f4c020')]},
+ an:{n:'银莲花',k:'main',lang:'期待与你相遇',tip:'黑色花心很有气质，白色最经典。',R:34,cs:[c('white','白','#f4f1ec'),c('red','红','#b8192a')]},
+ da:{n:'大丽花',k:'main',lang:'大吉大利，谢谢你',tip:'花头大，适合做视觉中心。',R:44,cs:[c('blush','奶咖','#efd2c2'),c('burgundy','酒红','#5d1022')]},
+ dz:{n:'雏菊',k:'main',lang:'藏在心底的爱',tip:'小而轻快，多放几朵像撒了星星。',R:24,cs:[c('white','白','#f6f4ee')]},
+ tu:{n:'郁金香',k:'main',lang:'爱的告白',tip:'侧面的杯形花，放在边上更好看。',R:32,sideOnly:1,cs:[c('burgundy','酒红','#5e0f22'),c('pink','粉','#f19bb2'),c('white','白','#f4f0e8'),c('yellow','黄','#f3c534'),c('purple','紫','#6f3b8f')]},
+ st:{n:'紫罗兰',k:'filler',lang:'永恒的美与爱',tip:'一串串的花穗，从花束边缘伸出来。',L:140,cs:[c('lilac','浅紫','#c3a6dc'),c('white','白','#f3f0ea'),c('magenta','紫红','#a3307a')]},
+ de:{n:'飞燕草',k:'filler',lang:'自由与轻盈',tip:'蓝色的长花穗，往高处拉出线条。',L:160,cs:[c('blue','蓝','#8bb0e6')]},
+ bb:{n:'满天星',k:'filler',lang:'真心喜欢',tip:'塞在花与花的缝隙里，整束会变得蓬松。',L:110,cs:[c('white','白','#ffffff')]},
+ la:{n:'薰衣草',k:'filler',lang:'等待爱情',tip:'细长的花穗，放在后方拉出高度。',L:140,cs:[c('purple','紫','#7a5aa6')]},
+ so:{n:'一枝黄花',k:'filler',lang:'鼓励与好运',tip:'毛茸茸的小黄花，让花束更活泼。',L:125,cs:[c('yellow','黄','#e2c227')]},
+ er:{n:'蓝刺芹',k:'filler',lang:'独立而温柔',tip:'带刺的蓝色小球，很有野趣。',L:115,cs:[c('blue','蓝','#5f7fb8')]},
+ wx:{n:'蜡花',k:'filler',lang:'持久的爱',tip:'星星点点的小花，填空隙很好用。',L:115,cs:[c('pink','粉','#e7a1c0')]},
+ eu:{n:'尤加利',k:'green',lang:'恩赐与回忆',tip:'圆圆的叶子，从外圈伸出来当衬底。',L:165,cs:[c('dollar','圆叶','#8faea0'),c('seeded','果尤','#97a993')]},
+ fe:{n:'蕨叶',k:'green',lang:'真诚',tip:'从两侧伸出来，让花束更舒展。',L:165,cs:[c('leather','深绿','#3e6a34')]},
+ ru:{n:'假叶树',k:'green',lang:'坚韧',tip:'细碎的亮绿叶子，适合衬浅色花。',L:150,cs:[c('italian','亮绿','#4d7c39')]},
+ ol:{n:'橄榄枝',k:'green',lang:'和平与安宁',tip:'细长的叶子，和好的时候送很合适。',L:145,cs:[c('branch','银绿','#99a487')]},
+};
+const KEYS=Object.keys(T);
+const aid=(it)=>{const d=T[it.t];const cc=d.cs[it.c]||d.cs[0];return `${it.t}_${cc[0]}`;};
+
+/* ================= 包装 / 花瓶 / 丝带 / 背景 ================= */
+const WRAPS=[
+ {n:'牛皮纸',o:'kraft',i:'kraft',e:'#6e4f33'},{n:'白色雾面',o:'tissue',i:'tissue',e:'#a59f96'},
+ {n:'黑色',o:'black',i:'cream',e:'#000000'},{n:'雾粉',o:'pink',i:'cream',e:'#a2757e'},
+ {n:'奶油',o:'cream',i:'cream',e:'#b2a087'},{n:'雾蓝',o:'blue',i:'cream',e:'#6f829c'},
+];
+const HANDS=[{n:'缎带缠绕',img:'stems_ribbon'},{n:'麻绳手扎',img:'stems_plain'}];
+const VASES=[{n:'奶白陶瓶',img:'vase_cream'},{n:'雾蓝陶瓶',img:'vase_blue'},{n:'玻璃瓶',img:'vase_glass'}];
+const BOWS=[{n:'象牙白',img:'bow_ivory'},{n:'雾粉',img:'bow_pink'},{n:'酒红丝绒',img:'bow_burgundy'},{n:'黑缎',img:'bow_black'},{n:'麻绳',img:'bow_twine'}];
+const BGS=[
+ {n:'奶茶',a:'#f8f1ea',b:'#e8d6ca'},{n:'蜜桃',a:'#fbefea',b:'#efcfcd'},{n:'亚麻',a:'#f6f3ec',b:'#dfd8c8'},
+ {n:'雾蓝',a:'#f1f4f7',b:'#cfd9e4'},{n:'鼠尾草',a:'#f1f5ef',b:'#d3dfd0'},{n:'夜空',a:'#2f3550',b:'#141829',dark:true},
+];
+const TEX=['kraft','tissue','black','pink','cream','blue'];
+
+function defsStr(data){
+ const h=id=>data&&data[id]?data[id]:(MAN[id]?ASSET+MAN[id].f:'');
+ let s='';
+ for(const t of TEX){s+=`<pattern id="p-${t}" patternUnits="userSpaceOnUse" x="0" y="60" width="420" height="420"><image href="${h('tx_'+t)}" width="420" height="420" preserveAspectRatio="none"/></pattern>`;
+  s+=`<pattern id="q-${t}" patternUnits="userSpaceOnUse" x="20" y="40" width="420" height="420" patternTransform="rotate(32 200 300)"><image href="${h('tx_'+t)}" width="420" height="420" preserveAspectRatio="none"/></pattern>`;}
+ s+=`<radialGradient id="floor"><stop offset="0" stop-color="#2b1a14" stop-opacity=".3"/><stop offset="1" stop-color="#2b1a14" stop-opacity="0"/></radialGradient>`;
+ s+=`<radialGradient id="gap"><stop offset="0" stop-color="#1a120e" stop-opacity=".86"/><stop offset=".72" stop-color="#1a120e" stop-opacity=".62"/><stop offset="1" stop-color="#1a120e" stop-opacity="0"/></radialGradient>`;
+ s+=`<radialGradient id="vig" cx=".5" cy=".42" r=".5"><stop offset=".55" stop-color="#1a120e" stop-opacity="0"/><stop offset=".86" stop-color="#1a120e" stop-opacity=".16"/><stop offset="1" stop-color="#1a120e" stop-opacity="0"/></radialGradient>`;
+ s+=`<linearGradient id="shV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></linearGradient>`;
+ s+=`<linearGradient id="shL" x1="0" y1="0" x2="1" y2=".25"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient>`;
+ s+=`<linearGradient id="shR" x1="1" y1="0" x2="0" y2=".25"><stop offset="0" stop-color="#000" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".34"/></linearGradient>`;
+ s+=`<linearGradient id="shB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".6" stop-color="#000" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".38"/></linearGradient>`;
+ const ds=(id,extra,dy,sd,op)=>`<filter id="${id}" x="-25%" y="-25%" width="150%" height="160%" color-interpolation-filters="sRGB">${extra}<feDropShadow ${extra?'in="d" ':''}dx="0" dy="${dy}" stdDeviation="${sd}" flood-color="#1c120e" flood-opacity="${op}"/></filter>`;
+ const cm=v=>`<feColorMatrix type="matrix" values="${v} 0 0 0 1 0" result="d"/>`;
+ s+=ds('ds','',3,3.4,.48)+ds('ds2',cm('.92 0 0 0 0 0 .91 0 0 0 0 0 .9 0 0 0 0 0'),3,3.4,.48)+ds('ds3',cm('1.05 0 0 0 .01 0 1.03 0 0 0 0 0 .98 0 0'),3,3.4,.48)
+  +ds('dsE',cm('.89 0 0 0 0 0 .88 0 0 0 0 0 .88 0 0'),3,3.4,.48)+ds('dsS','',2,2.2,.32);
+ return s;
+}
+
+/* 花束圆顶的大小跟着主花的总面积走：花少就小巧，花多就饱满；包装纸跟着一起缩放 */
+function geo(st){const m=st.box.m;let A=0,n=0;
+ for(const it of st.items){const d=T[it.t];if(d&&d.k==='main'){A+=(d.R*it.s)**2;n++;}}
+ const rx=n?clamp(Math.sqrt(A)*.92,58,150):110,ry=rx*.82,s=clamp(rx/120,.6,1.25);
+ // 圆顶中心固定：加花时花束向外长，已经插好的花不会被挤到包装纸外面
+ if(m==='h')return{m,cx:200,cy:236,rx,ry,tx:200,ty:540,s};
+ if(m==='v'){const cy=255-Math.max(0,ry-80)*.5;return{m,cx:200,cy,rx,ry,tx:200,ty:470,s,vTop:cy+ry*.6};}
+ const cy=226,rimY=cy+ry*.66,ty=Math.min(474,rimY+150*s);return{m:'w',cx:200,cy,rx,ry,tx:200,ty,s,rimY};}
+const dd=(it,g)=>Math.hypot((it.x-g.cx)/g.rx,(it.y-g.cy)/g.ry);
+const fanA=(x,y,g,f)=>Math.atan2(x-g.tx,g.ty-y)*180/Math.PI*f;
+/* 从圆顶中心往外的方向（用于侧面花和配叶朝外伸） */
+const radA=(x,y,g,f)=>Math.atan2((x-g.cx)/g.rx,-(y-g.cy)/g.ry)*180/Math.PI*f;
+const domePt=(g,deg,f)=>{const a=deg*Math.PI/180;return[g.cx+Math.cos(a)*g.rx*f,g.cy+Math.sin(a)*g.ry*f];};
+
+/* 一枝花在画面里的样子：用哪张素材、多大、怎么转 */
+function sprite(it,st,g){
+ const def=T[it.t];if(!def)return null;const k=def.k;const base=aid(it);
+ const v=it.v|0;
+ if(k==='main'){
+  const d=dd(it,g);let id=base,side=!!def.sideOnly;
+  if(!side&&d>.8&&MAN[base+'_s']){id=base+'_s';side=true;}
+  else if(v%2&&MAN[base+'_2']&&(!side||def.sideOnly))id=base+'_2';
+  const m=MAN[id];if(!m)return null;
+  const persp=1-.14*clamp((d-.45)/.55,0,1);
+  const R=def.R*it.s*persp*(side&&!def.sideOnly?.92:1);
+  const kk=R/(m.r*Math.max(m.w,m.h)),w=m.w*kk,h=m.h*kk;
+  const rot=side?radA(it.x,it.y,g,.85)+(it.r||0):(it.r||0);
+  // 素材已烘焙投影时不再用实时滤镜（手机上更流畅）
+  return{id,w,h,ox:-m.cx*w,oy:-m.cy*h,rot,f:m.sh?'':d>.84?'dsE':['ds','ds2','ds3'][(v>>2)%3],hr:R*.85,side,flip:(v>>1)%2===1};
+ }
+ const m=MAN[base];if(!m)return null;
+ const L=def.L*it.s*clamp(g.rx/125,.55,1.05)*(k==='filler'?.82:.95),kk=L/(m.h*m.ay),w=m.w*kk,h=m.h*kk;
+ return{id:base,w,h,ox:-m.ax*w,oy:-m.ay*h,rot:sprigRot(it.x,it.y,it,g),f:m.sh?'':'dsS',len:L,flip:(v>>1)%2===1};
+}
+const fAttr=f=>f?` filter="url(#${f})"`:'';
+function sprigRot(x,y,it,g){return radA(x,y,g,T[it.t].k==='green'?.85:.7)*.75+fanA(x,y,g,1.2)*.25+(it.r||0);}
+function itemSVG(it,st,g){
+ const sp=sprite(it,st,g);if(!sp)return '';
+ const hit=T[it.t].k==='main'?`<circle r="${F(sp.hr)}" fill="transparent"/>`:`<ellipse cy="${F(-sp.len*.6)}" rx="${F(Math.max(14,sp.w*.2))}" ry="${F(sp.len*.38)}" fill="transparent"/>`;
+ const im=`<image href="${href(sp.id)}" x="${F(sp.ox)}" y="${F(sp.oy)}" width="${F(sp.w)}" height="${F(sp.h)}" preserveAspectRatio="none"${fAttr(sp.f)} pointer-events="none"/>`;
+ return `<g class="it" data-id="${it.id}" transform="translate(${F(it.x)} ${F(it.y)}) rotate(${F(sp.rot)})"><g class="bl">${sp.flip?`<g transform="scale(-1 1)">${im}</g>`:im}${hit}</g></g>`;
+}
+/* 花束内部垫一层叶材：真实花束的花缝里都是叶子，而不是空的 */
+function bedSVG(g,st){const ids=['ru_italian','eu_dollar'].filter(i=>MAN[i]);if(!ids.length)return '';
+ const n=st.box.m==='w'?8:11,L=Math.max(g.rx,g.ry)*1.08;let s='';
+ for(let i=0;i<n;i++){const ang=(st.box.m==='w'?-200+i*(220/(n-1)):-180+i*360/n+12),a=ang*Math.PI/180;
+  const id=ids[i%ids.length],m=MAN[id],h=L/m.ay,w=m.w*h/m.h,x=g.cx+Math.cos(a)*g.rx*.12,y=g.cy+Math.sin(a)*g.ry*.12;
+  s+=`<g transform="translate(${F(x)} ${F(y)}) rotate(${F(ang+90)})"><image href="${href(id)}" x="${F(-m.ax*w)}" y="${F(-m.ay*h)}" width="${F(w)}" height="${F(h)}" preserveAspectRatio="none"${fAttr(m.sh?'':'dsS')}/></g>`;}
+ return `<g class="lc">${s}</g>`;}
+function imgAt(id,cx,top,w,cls,extra=''){const m=MAN[id];if(!m)return '';const h=w*m.h/m.w;return `<image class="${cls}" href="${href(id)}" x="${F(cx-w/2)}" y="${F(top)}" width="${F(w)}" height="${F(h)}" preserveAspectRatio="none" ${extra}/>`;}
+function imgCenter(id,cx,cy,w,cls,extra=''){const m=MAN[id];if(!m)return '';const h=w*m.h/m.w;return `<image class="${cls}" href="${href(id)}" x="${F(cx-m.cx*w)}" y="${F(cy-m.cy*h)}" width="${F(w)}" height="${F(h)}" preserveAspectRatio="none" ${extra}/>`;}
+
+/* 包装纸：按花束圆顶的实际轮廓生成。后片在花的外缘露出几个纸角，前片从下往上包住花束 */
+const P2=p=>`${F(p[0])} ${F(p[1])}`;
+function crown(g,angs,fPeak,fVal,half){const pts=angs.map((a,i)=>domePt(g,a,i%2?fVal:fPeak));
+ let d=`M${F(200-half)} ${g.ty}L${P2(pts[0])}`;
+ for(let i=1;i<pts.length;i++){const q=pts[i-1],p=pts[i];const mx=(p[0]+q[0])/2,my=(p[1]+q[1])/2;d+=i%2?`Q${F(mx+(g.cx-mx)*.06)} ${F(my+(g.cy-my)*.06)} ${P2(p)}`:`L${P2(p)}`;}
+ return d+`L${F(200+half)} ${g.ty}Z`;}
+function wrapBack(w,g){const o=w.o,i=w.i,e=w.e,s=g.s;
+ const d1=crown(g,[186,206,226,250,272,294,316,336,356],1.24,1.08,16*s);
+ const d2=crown(g,[194,218,242,262,286,308,330,348],1.15,1.0,12*s);
+ return `<g class="wb" style="transform-origin:200px ${g.ty}px"><path d="${d1}" fill="url(#p-${o})" stroke="${e}" stroke-opacity=".4" stroke-width=".7" stroke-linejoin="round"/><path d="${d1}" fill="url(#shV)"/>`
+ +`<path d="${d2}" fill="url(#q-${i})" stroke="${e}" stroke-opacity=".3" stroke-width=".7" stroke-linejoin="round"/><path d="${d2}" fill="url(#shV)"/></g>`;}
+function wrapFront(w,g){const o=w.o,i=w.i,e=w.e,s=g.s,rim=g.rimY,ty=g.ty+8*s;
+ const Lp=domePt(g,158,1.12),Rp=domePt(g,22,1.12);
+ const lEnd=[g.cx+.55*g.rx,rim+.04*g.ry],lCtl=[g.cx-.35*g.rx,rim+.2*g.ry];
+ const rEnd=[g.cx-.42*g.rx,rim+.1*g.ry],rCtl=[g.cx+.32*g.rx,rim+.16*g.ry];
+ const dl=`M${F(194)} ${F(ty)}L${P2(Lp)}Q${P2(lCtl)} ${P2(lEnd)}Z`,dr=`M${F(206)} ${F(ty)}L${P2(Rp)}Q${P2(rCtl)} ${P2(rEnd)}Z`;
+ const fold=`M${P2(Lp)}Q${P2(lCtl)} ${P2(lEnd)}L${F(lEnd[0]-5*s)} ${F(lEnd[1]+11*s)}Q${F(lCtl[0])} ${F(lCtl[1]+11*s)} ${F(Lp[0]+7*s)} ${F(Lp[1]+9*s)}Z`;
+ return `<g class="wf" style="transform-origin:200px ${g.ty}px">`
+ +`<path d="${dr}" fill="url(#q-${i})" stroke="${e}" stroke-opacity=".4" stroke-width=".7" stroke-linejoin="round"/><path d="${dr}" fill="url(#shR)"/>`
+ +`<path d="${dl}" fill="url(#p-${o})" stroke="${e}" stroke-opacity=".45" stroke-width=".7" stroke-linejoin="round"/><path d="${dl}" fill="url(#shL)"/><path d="${dl}" fill="url(#shB)"/>`
+ +`<path d="${fold}" fill="url(#q-${i})" stroke="${e}" stroke-opacity=".3" stroke-width=".6" stroke-linejoin="round"/><path d="${fold}" fill="#000" fill-opacity=".05"/>`
+ +`<path d="M${P2(Lp)}Q${P2(lCtl)} ${P2(lEnd)}" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1"/>`
+ +`<path d="M194 ${F(ty)}L${F(g.cx-.42*g.rx)} ${F(rim+.16*g.ry)}" stroke="#000" stroke-opacity=".08" stroke-width="1.6" fill="none"/></g>`;}
+function tagSVG(text,x,y){const w=Math.min(132,16+[...text].reduce((a,ch)=>a+(ch.charCodeAt(0)>255?10.5:6),0));
+ return `<g class="tag" style="transform-origin:${x+3}px ${y+4}px"><path d="M${x+3} ${y+4}Q${x+12} ${y+22} ${x+26} ${y+31}" fill="none" stroke="#a08c7a" stroke-width=".8"/>`
+ +`<g transform="translate(${x+24} ${y+28}) rotate(-9)" filter="url(#dsS)"><rect x="0" y="0" width="${F(w)}" height="21" rx="3" fill="#fdf9f2" stroke="#cdbba5" stroke-width=".8"/><circle cx="5.5" cy="10.5" r="1.8" fill="none" stroke="#cdbba5" stroke-width=".8"/>`
+ +`<text x="12" y="14.6" font-size="10.5" fill="#5e4a3f" font-family="'Songti SC','STSong','Noto Serif SC',serif">${esc(text)}</text></g></g>`;}
+
+function bouquetSVG(st,o={}){
+ const g=geo(st),m=g.m;let greens='',fillers='',heads='';
+ for(const it of st.items){const k=T[it.t]&&T[it.t].k;if(!k)continue;const s=itemSVG(it,st,g);if(k==='main')heads+=s;else if(k==='filler')fillers+=s;else greens+=s;}
+ const hasMain=st.items.some(i=>T[i.t]&&T[i.t].k==='main'&&MAN[aid(i)]);
+ let back='',mid='',front='',deco='',tieY=330,floorY=m==='v'?498:506,floorR=m==='v'?110:120;
+ if(m==='w'){const W=WRAPS[st.box.w]||WRAPS[0],sw=52*Math.max(.8,g.s),sm=MAN.stems_plain;tieY=g.ty;
+  back=wrapBack(W,g);front=wrapFront(W,g);mid=imgAt('stems_plain',200,g.ty-56,F(sw),'sb');if(sm){floorY=Math.min(512,g.ty-56+sw*sm.h/sm.w+2);floorR=60+40*g.s;}
+  if(st.rb>=0&&BOWS[st.rb])deco=imgCenter(BOWS[st.rb].img,200,g.ty+2,F(100*Math.max(.8,g.s)),'rb',`filter="url(#dsS)" style="transform-origin:200px ${g.ty}px"`);}
+ else if(m==='h'){const H=HANDS[st.box.h]||HANDS[0],top=g.cy+g.ry*.4,sw=58+g.s*12,hm=MAN[H.img];tieY=top+(hm?sw*hm.h/hm.w*.42:110);
+  mid=imgAt(H.img,200,top,F(sw),'sb','filter="url(#dsS)"');if(hm){floorY=Math.min(512,top+sw*hm.h/hm.w+2);floorR=70;}
+  if(st.rb>=0&&BOWS[st.rb])deco=imgCenter(BOWS[st.rb].img,200,tieY,96,'rb',`filter="url(#dsS)" style="transform-origin:200px ${F(tieY)}px"`);}
+ else{const V=VASES[st.box.v]||VASES[0];mid=imgAt(V.img,200,g.vTop,188,'vf','filter="url(#dsS)" style="transform-origin:200px 500px"');}
+ let s=(o.defs?`<defs>${defsStr(o.data)}</defs>`:'')
+  +`<ellipse cx="200" cy="${F(floorY)}" rx="${floorR}" ry="12" fill="url(#floor)"/>`
+  +back+(hasMain?bedSVG(g,st):'')+`<g class="gs">${greens}</g>`
+  +(m==='w'?mid:'')
+  +(hasMain?`<ellipse class="gp" cx="${g.cx}" cy="${F(g.cy+4)}" rx="${F(g.rx*.98)}" ry="${F(g.ry*.94)}" fill="url(#gap)"/>`:'')
+  +(m!=='w'?mid:'')
+  +`<g class="fs">${fillers}</g><g class="hs">${heads}</g>`
+  +(hasMain?`<ellipse class="gp" cx="${g.cx}" cy="${F(g.cy+g.ry*.08)}" rx="${F(g.rx*1.12)}" ry="${F(g.ry*1.1)}" fill="url(#vig)" pointer-events="none"/>`:'')
+  +front+deco
+  +(st.tg&&m!=='v'?tagSVG(st.tg,200,tieY):'');
+ if(o.sel!=null){const it=st.items.find(i=>i.id===o.sel);if(it){const r=selRing(it,st,g);if(r)s+=`<circle id="selr" cx="${F(r.x)}" cy="${F(r.y)}" r="${F(r.r)}" fill="none" stroke="#a94a58" stroke-width="1.4" stroke-dasharray="4 3" pointer-events="none"/>`;}}
+ if(o.inner)return s;
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520"${o.w?` width="${o.w}" height="${o.h}"`:''}>${s}</svg>`;
+}
+function selRing(it,st,g){const sp=sprite(it,st,g);if(!sp)return null;if(T[it.t].k==='main')return{x:it.x,y:it.y,r:sp.hr+8};const a=sp.rot*Math.PI/180,l=sp.len*.55;return{x:it.x+Math.sin(a)*l,y:it.y-Math.cos(a)*l,r:sp.len*.42};}
+const thumb=(t,ci=0)=>{const cc=T[t].cs[ci]||T[t].cs[0];return href(`${t}_${cc[0]}`);};
+
+/* ================= 自动摆放 ================= */
+const ORDER={green:0,filler:1,main:2};
+const angOf=(x,y,g)=>Math.atan2((y-g.cy)/g.ry,(x-g.cx)/g.rx)*180/Math.PI;
+const angDiff=(a,b)=>Math.abs(((a-b)%360+540)%360-180);
+function placeItem(it,st,rand,gFix){
+ const def=T[it.t],g=gFix||geo(st),k=def.k;let best=[g.cx,g.cy],bs=-Infinity;
+ const others=st.items.filter(o=>o!==it&&T[o.t]&&o.placed!==false);
+ for(let i=0;i<160;i++){let x,y,pen=0;
+  if(k==='main'){const a=rand()*Math.PI*2,rr=Math.sqrt(rand()),sa=Math.sin(a);x=g.cx+Math.cos(a)*rr*g.rx*(1-.38*Math.max(0,sa)*rr);y=g.cy+sa*rr*g.ry;
+   if(g.m==='w'&&y>g.cy+g.ry*.6)y=g.cy+g.ry*.6-rand()*10;
+   const rN=def.R*it.s;for(const o of others){if(T[o.t].k!=='main')continue;const d=Math.hypot(o.x-x,o.y-y),ov=(T[o.t].R*o.s+rN)*.62-d;if(ov>0)pen+=ov*ov;}pen+=rr*rr*rN*3.4;}
+  else{// 配花/配叶：沿圆顶上半圈（左侧 → 顶部 → 右侧）均匀散开
+   const ang=-200+rand()*220,a=ang*Math.PI/180,rr=k==='filler'?.38+rand()*.34:.42+rand()*.3;x=g.cx+Math.cos(a)*rr*g.rx;y=g.cy+Math.sin(a)*rr*g.ry;
+   for(const o of others){const ko=T[o.t].k;if(ko==='main')continue;const da=angDiff(ang,angOf(o.x,o.y,g)),need=(ko===k?(k==='green'?40:34):18)-da;if(need>0)pen+=need*need*(ko===k?1:.5);}}
+  const sc=-pen+rand()*8;if(sc>bs){bs=sc;best=[x,y];}}
+ it.x=clamp(best[0],24,376);it.y=clamp(best[1],50,g.ty-50);
+}
+function insertItem(st,it){const g=geo(st),ko=ORDER[T[it.t].k];let idx;
+ if(ko<2){idx=st.items.findIndex(o=>ORDER[T[o.t].k]>ko);if(idx<0)idx=st.items.length;}
+ else{const d=dd(it,g);idx=st.items.findIndex(o=>T[o.t].k==='main'&&dd(o,g)<d);if(idx<0)idx=st.items.length;}
+ st.items.splice(idx,0,it);}
+function sortItems(st){const g=geo(st);st.items.sort((a,b)=>(ORDER[T[a.t].k]-ORDER[T[b.t].k])||(T[a.t].k==='main'?dd(b,g)-dd(a,g):0));}
+function buildMix(st,list){
+ st.items=[];const all=[];
+ for(const [t,ck,n] of list){if(!T[t])continue;let ci=T[t].cs.findIndex(x=>x[0]===ck);if(ci<0)ci=0;if(!MAN[`${t}_${T[t].cs[ci][0]}`])continue;for(let i=0;i<n;i++)all.push({t,c:ci});}
+ const mains=all.filter(a=>T[a.t].k==='main').sort((a,b)=>T[b.t].R-T[a.t].R);
+ const ordered=shuffle(mains.slice(0,Math.ceil(mains.length/2))).concat(shuffle(mains.slice(Math.ceil(mains.length/2)))).concat(shuffle(all.filter(a=>T[a.t].k==='filler'))).concat(shuffle(all.filter(a=>T[a.t].k==='green')));
+ for(const a of ordered){const k=T[a.t].k;st.items.push({id:nextId++,t:a.t,c:a.c,s:k==='main'?.94+Math.random()*.12:.9+Math.random()*.2,r:k==='main'?Math.round((Math.random()-.5)*40):Math.round((Math.random()-.5)*8),v:Math.floor(Math.random()*100),x:0,y:0,placed:false});}
+ const gF=geo(st);for(const it of st.items){placeItem(it,st,Math.random,gF);it.placed=true;}
+ for(const it of st.items)delete it.placed;
+ sortItems(st);
+}
+
+/* ================= 场合与灵感 ================= */
+const OCC=[
+ {n:'早安',e:'☀️',msg:'早安。今天的第一束花给你，愿你一整天都亮晶晶的。',box:{m:'w',w:0},rb:4,bg:2,mix:[['su','yellow',3],['dz','white',4],['ge','orange',2],['so','yellow',3],['eu','dollar',3]]},
+ {n:'想你了',e:'💭',msg:'今天也很想你。',box:{m:'w',w:5},rb:0,bg:3,mix:[['ro','white',4],['hy','blue',2],['ra','cream',2],['de','blue',3],['eu','dollar',3]]},
+ {n:'我爱你',e:'🌹',msg:'没什么特别的事，就是想说：我爱你。',box:{m:'w',w:2},rb:2,bg:1,mix:[['ro','red',13],['bb','white',3],['eu','seeded',3]]},
+ {n:'纪念日',e:'💍',msg:'谢谢你，陪我走过这么多天。',box:{m:'w',w:1},rb:1,bg:1,mix:[['pe','pink',4],['ra','pink',3],['hy','white',2],['st','lilac',4],['eu','dollar',2]]},
+ {n:'生日',e:'🎂',msg:'生日快乐！新的一岁也要被好好爱着。',box:{m:'h',h:1},rb:-1,bg:0,mix:[['ro','peach',5],['ro','blush',4],['so','yellow',3],['er','blue',3],['st','magenta',2],['wx','pink',2],['eu','dollar',4]]},
+ {n:'约会',e:'🌷',msg:'今晚见，想你一整天了。',box:{m:'h',h:0},rb:-1,bg:2,mix:[['tu','burgundy',4],['ra','cream',3],['ro','pink',3],['de','blue',3],['ru','italian',3]]},
+ {n:'对不起',e:'🥺',msg:'对不起，是我不好。这束花先替我抱抱你。',box:{m:'w',w:1},rb:0,bg:4,mix:[['pe','white',3],['li','white',3],['ra','cream',2],['bb','white',3],['ol','branch',3]]},
+ {n:'加油',e:'💪',msg:'今天也辛苦啦。你超棒的，我一直在。',box:{m:'w',w:0},rb:4,bg:2,mix:[['su','yellow',3],['ge','orange',3],['ge','pink',2],['so','yellow',3],['ru','italian',3]]},
+ {n:'晚安',e:'🌙',msg:'晚安，梦里也有花。',box:{m:'w',w:0},rb:4,bg:5,mix:[['ro','blue',11],['eu','seeded',4]]},
+];
+const LINES=['今天也很想你。','早安，今天的第一束花给你。','路过花店的时候想到你，就给你插了一束。','辛苦啦，今天也抱抱你。','晚安，梦里也有花。','你笑起来的样子，比这束花还好看。','没什么特别的事，就是想送你一束花。','今天天气很好，像遇见你那天一样。','愿你今天被温柔以待。','见不到的日子，就让花先替我陪着你。','花是今天的，喜欢是每天的。','今天有没有好好吃饭？','想把今天所有的好心情都插进这束花里。','又是喜欢你的一天。','这束花会一直开着，就像我想你这件事。'];
+const SCHEMES=[
+ {mains:[['ro','red'],['ro','burgundy']],fill:[['bb','white']],green:[['eu','seeded']]},
+ {mains:[['pe','pink'],['ra','pink'],['ro','blush'],['hy','white']],fill:[['st','lilac'],['wx','pink']],green:[['eu','dollar']]},
+ {mains:[['ro','peach'],['ro','blush'],['da','blush'],['ge','orange']],fill:[['so','yellow'],['er','blue'],['st','magenta']],green:[['eu','dollar']]},
+ {mains:[['ro','white'],['hy','blue'],['ra','cream'],['an','white']],fill:[['de','blue'],['bb','white']],green:[['eu','dollar'],['ol','branch']]},
+ {mains:[['tu','burgundy'],['ra','cream'],['ro','pink'],['li','white']],fill:[['de','blue']],green:[['ru','italian']]},
+ {mains:[['pe','white'],['li','white'],['ro','white'],['hy','white']],fill:[['bb','white'],['st','white']],green:[['ol','branch'],['eu','seeded']]},
+ {mains:[['ro','lilac'],['li','purple'],['hy','lilac'],['ra','cream']],fill:[['la','purple'],['st','lilac']],green:[['eu','dollar']]},
+ {mains:[['su','yellow'],['dz','white'],['ge','orange']],fill:[['so','yellow']],green:[['fe','leather'],['ru','italian']]},
+ {mains:[['ro','blue'],['an','white']],fill:[['bb','white']],green:[['eu','seeded']]},
+];
+
+/* ================= 链接编码 ================= */
+function enc(obj){const bytes=new TextEncoder().encode(JSON.stringify(obj));let bin='';for(let i=0;i<bytes.length;i+=4096)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+4096));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function dec(str){str=decodeURIComponent(str).replace(/-/g,'+').replace(/_/g,'/');while(str.length%4)str+='=';const bin=atob(str);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return JSON.parse(new TextDecoder().decode(bytes));}
+const baseURL=()=>location.href.split('#')[0].split('?')[0];
+const MODES=['w','h','v'];
+function compact(st){return{v:2,i:st.items.filter(it=>T[it.t]).map(it=>[it.t,it.c,Math.round(it.x),Math.round(it.y),Math.round(it.s*100),Math.round(it.r||0),it.v|0]),b:[MODES.indexOf(st.box.m),st.box.w|0,st.box.h|0,st.box.v|0],rb:st.rb,tg:st.tg||'',bg:st.bg|0};}
+function expand(g){let id=1;const b=g.b||[0,0,0,0];return{items:(g.i||[]).filter(a=>T[a[0]]).map(a=>({id:id++,t:a[0],c:a[1]|0,x:+a[2]||200,y:+a[3]||200,s:(a[4]||100)/100,r:a[5]|0,v:a[6]|0})),box:{m:MODES[b[0]]||'w',w:b[1]|0,h:b[2]|0,v:b[3]|0},rb:g.rb===undefined?0:g.rb,tg:g.tg||'',bg:g.bg|0};}
+function readParam(name){const h=location.hash.replace(/^#/,''),q=location.search.replace(/^\?/,'');for(const part of (h+'&'+q).split('&')){const i=part.indexOf('=');if(i>0&&part.slice(0,i)===name)return part.slice(i+1);}return null;}
+
+/* ================= 背景 ================= */
+function applyBg(i){const b=BGS[i]||BGS[0];document.body.style.setProperty('--bga',b.a);document.body.style.setProperty('--bgb',b.b);document.body.classList.toggle('dark',!!b.dark);const m=document.querySelector('meta[name=theme-color]');if(m)m.content=b.a;}
+
+/* ================= 素材预载 / 导出 ================= */
+function usedAssets(st){const g=geo(st),ids=new Set();for(const it of st.items){const sp=sprite(it,st,g);if(sp)ids.add(sp.id);}
+ if(st.items.some(i=>T[i.t]&&T[i.t].k==='main')){ids.add('ru_italian');ids.add('eu_dollar');}
+ if(st.box.m==='w'){const W=WRAPS[st.box.w]||WRAPS[0];ids.add('tx_'+W.o);ids.add('tx_'+W.i);ids.add('stems_plain');}
+ else if(st.box.m==='h')ids.add((HANDS[st.box.h]||HANDS[0]).img);else ids.add((VASES[st.box.v]||VASES[0]).img);
+ if(st.box.m!=='v'&&st.rb>=0&&BOWS[st.rb])ids.add(BOWS[st.rb].img);return [...ids].filter(i=>MAN[i]);}
+function preload(ids){return Promise.all(ids.map(id=>new Promise(res=>{const im=new Image();im.onload=im.onerror=()=>res();im.src=ASSET+MAN[id].f;})));}
+const dataCache={};
+async function toData(id){if(dataCache[id])return dataCache[id];const r=await fetch(ASSET+MAN[id].f);const b=await r.blob();return dataCache[id]=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(b);});}
+function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src;});}
+function wrapLines(g,text,maxW){const out=[];for(const para of String(text||'').split('\n')){let line='';for(const ch of [...para]){if(g.measureText(line+ch).width>maxW&&line&&!/[，。！？、；：,.!?;:）」』”’》~～]/.test(ch)){out.push(line);line=ch;}else line+=ch;}out.push(line);}while(out.length&&out[out.length-1]==='')out.pop();return out;}
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
+async function renderPNG(st,card){
+ const W=1080,SERIF='"Songti SC","STSong","Noto Serif SC","Noto Serif CJK SC",serif',SANS='-apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+ const bg=BGS[st.bg]||BGS[0];
+ const m=document.createElement('canvas').getContext('2d');m.font=`40px ${SERIF}`;
+ let lines=wrapLines(m,card.m||'',760);if(lines.length>7){lines=lines.slice(0,7);lines[6]+='…';}
+ const hasCard=!!(card.to||card.m||card.f);
+ const bqY=30,bqH=1196,bqW=920,cardY=bqY+bqH-96,cardH=hasCard?(card.to?150:70)+lines.length*64+(card.f?80:20)+110:0;
+ const H=hasCard?cardY+cardH+90:bqY+bqH+60;
+ const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
+ const gr=g.createRadialGradient(W/2,H*.3,50,W/2,H*.3,H*.9);gr.addColorStop(0,bg.a);gr.addColorStop(1,bg.b);g.fillStyle=gr;g.fillRect(0,0,W,H);
+ const data={};for(const id of usedAssets(st))data[id]=await toData(id);
+ DATA=data;let svg;try{svg=bouquetSVG(st,{defs:true,data,w:bqW*2,h:bqH*2});}finally{DATA=null;}
+ const img=await loadImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg));
+ g.drawImage(img,(W-bqW)/2,bqY,bqW,bqH);
+ if(hasCard){
+  g.save();g.shadowColor='rgba(80,30,40,.22)';g.shadowBlur=50;g.shadowOffsetY=16;rr(g,110,cardY,860,cardH,40);g.fillStyle='rgba(255,252,248,.97)';g.fill();g.restore();
+  let y=cardY+92;const x=180;
+  if(card.to){g.fillStyle='#3a2a2d';g.font=`600 46px ${SERIF}`;g.fillText(`亲爱的${card.to}：`,x,y);y+=82;}else y+=10;
+  g.fillStyle='#4a383a';g.font=`40px ${SERIF}`;for(const ln of lines){g.fillText(ln,x,y);y+=64;}
+  if(card.f){y+=16;g.fillStyle='#8f7b78';g.font=`italic 38px ${SERIF}`;g.textAlign='right';g.fillText(`— ${card.f}`,900,y);g.textAlign='left';}
+  const fy=cardY+cardH-50;g.strokeStyle='rgba(90,50,55,.18)';g.setLineDash([6,6]);g.beginPath();g.moveTo(x,fy-46);g.lineTo(900,fy-46);g.stroke();g.setLineDash([]);
+  g.fillStyle='#a08e8a';g.font=`28px ${SANS}`;g.fillText(fmtDate(card.d)+(card.n?` · 第 ${card.n} 天`:''),x,fy);
+  g.fillStyle='#a94a58';g.font=`600 30px ${SERIF}`;g.textAlign='right';g.fillText('花笺',900,fy);g.textAlign='left';
+ }
+ return cv;
+}
+async function saveImage(st,card){
+ toast('正在生成图片…');
+ let cv;try{cv=await renderPNG(st,card);}catch(e){console.error(e);toast(location.protocol==='file:'?'直接双击打开的文件不能导出图片，部署后或用预览网址打开就可以':'生成失败了，再试一次');return;}
+ const url=cv.toDataURL('image/jpeg',.92),name=`花笺-${card.d||today()}.jpg`;
+ $('#iImg').src=url;const dl=$('#iDl');dl.href=url;dl.download=name;dl.hidden=isWeChat;
+ $('#iHint').textContent=isMobile?'长按图片可以保存，或者直接转发给 ta。':'点「下载图片」保存，或者右键图片复制。';
+ const sh=$('#iShare');sh.hidden=true;
+ if(!isWeChat&&navigator.canShare){cv.toBlob(b=>{if(!b)return;const f=new File([b],name,{type:'image/jpeg'});if(navigator.canShare({files:[f]})){sh.hidden=false;sh.onclick=()=>navigator.share({files:[f]}).catch(()=>{});}},'image/jpeg',.92);}
+ openModal('mImg');
+}
+
+/* ================= 弹窗 ================= */
+function openModal(id){$('#'+id).hidden=false;}
+function closeModal(id){$('#'+id).hidden=true;}
+document.addEventListener('click',e=>{const cl=e.target.closest('[data-close]');if(cl){cl.closest('.modal').hidden=true;return;}if(e.target.classList.contains('modal'))e.target.hidden=true;});
+async function copyText(text,input){try{await navigator.clipboard.writeText(text);return true;}catch(e){if(input){input.focus();input.select();input.setSelectionRange(0,99999);}try{return document.execCommand('copy');}catch(e2){return false;}}}
+
+/* ================================================================
+   编辑器
+================================================================ */
+let S,nextId=1,sel=null,undoStack=[],tab='main',drag=null,pendingMsg='';
+const lastColor={};
+const newState=()=>({items:[],box:{m:'w',w:0,h:0,v:0},rb:4,tg:'',bg:0});
+function snap(){undoStack.push(JSON.stringify(S));if(undoStack.length>60)undoStack.shift();$('#bUndo').disabled=false;}
+function undo(){if(!undoStack.length)return;S=JSON.parse(undoStack.pop());if(sel!=null&&!S.items.some(i=>i.id===sel))sel=null;$('#bUndo').disabled=!undoStack.length;applyBg(S.bg);drawStage();renderTab();save();}
+function save(){store.set('hj2.draft',{S,nextId});}
+const selItem=()=>S.items.find(i=>i.id===sel);
+
+function drawStage(){
+ $('#cv').innerHTML=bouquetSVG(S,{inner:true,sel});
+ const n=S.items.length;$('#count').textContent=`${n} 枝`;$('#hint').hidden=n>0;renderSel();
+}
+/* 只换选中圈，不重绘整束花（避免图片重新解码时闪一下） */
+function setSel(id){sel=id;const old=$('#selr');if(old)old.remove();const it=selItem();
+ if(it){const q=selRing(it,S,geo(S));if(q)$('#cv').insertAdjacentHTML('beforeend',`<circle id="selr" cx="${F(q.x)}" cy="${F(q.y)}" r="${F(q.r)}" fill="none" stroke="#a94a58" stroke-width="1.4" stroke-dasharray="4 3" pointer-events="none"/>`);}
+ renderSel();}
+function updateItemDom(it){const g=geo(S);const el=$(`#cv .it[data-id="${it.id}"]`);
+ if(el){const sp=sprite(it,S,g),im=el.querySelector('image');
+  if(sp&&im){el.setAttribute('transform',`translate(${F(it.x)} ${F(it.y)}) rotate(${F(sp.rot)})`);const h=href(sp.id);if(im.getAttribute('href')!==h)im.setAttribute('href',h);
+   im.setAttribute('x',F(sp.ox));im.setAttribute('y',F(sp.oy));im.setAttribute('width',F(sp.w));im.setAttribute('height',F(sp.h));if(sp.f)im.setAttribute('filter',`url(#${sp.f})`);else im.removeAttribute('filter');
+   const c=el.querySelector('circle');if(c)c.setAttribute('r',F(sp.hr));}
+  else el.outerHTML=itemSVG(it,S,g);}
+ const r=$('#selr');if(r&&it.id===sel){const q=selRing(it,S,g);if(q){r.setAttribute('cx',F(q.x));r.setAttribute('cy',F(q.y));r.setAttribute('r',F(q.r));}}}
+
+function renderSel(){
+ const box=$('#seled'),it=selItem();$('.ov.bl').hidden=!!it;
+ if(!it){box.hidden=true;box.innerHTML='';box._it=null;return;}
+ const def=T[it.t],same=!box.hidden&&box._it===it;box.hidden=false;box._it=it;
+ if(same){$$('.sw button',box).forEach(b=>b.classList.toggle('on',+b.dataset.c===it.c));return;}
+ box.innerHTML=`<div class="se-h"><b>${def.n}</b><i>${def.lang}</i><button class="x" id="seX" title="收起">×</button></div>
+ ${def.cs.length>1?`<div class="sw">${def.cs.map((cc,i)=>`<button data-c="${i}" class="${i===it.c?'on':''}" title="${cc[1]}" style="background:radial-gradient(circle at 35% 30%,${mix(cc[2],'#ffffff',.35)},${cc[2]} 60%,${mix(cc[2],'#000000',.25)})"></button>`).join('')}</div>`:''}
+ <div class="se-r">大小<input type="range" id="seS" min="60" max="150" value="${Math.round(it.s*100)}">角度<input type="range" id="seR" min="-60" max="60" value="${it.r||0}"></div>
+ <div class="se-b"><button id="seUp">放到最前</button><button id="seDup">再来一枝</button><button class="del" id="seDel">移除</button></div>`;
+ $('#seX').onclick=()=>setSel(null);
+ $$('.sw button',box).forEach(b=>b.onclick=()=>{snap();it.c=+b.dataset.c;lastColor[it.t]=it.c;drawStage();save();});
+ for(const [id,key,div] of [['#seS','s',100],['#seR','r',1]]){const inp=$(id,box);
+  inp.addEventListener('pointerdown',snap);inp.addEventListener('keydown',snap,{once:true});
+  inp.addEventListener('input',()=>{it[key]=+inp.value/div;updateItemDom(it);});inp.addEventListener('change',save);}
+ $('#seUp').onclick=()=>{snap();const k=T[it.t].k;S.items=S.items.filter(i=>i!==it);let idx=S.items.findIndex(o=>ORDER[T[o.t].k]>ORDER[k]);if(idx<0)idx=S.items.length;S.items.splice(idx,0,it);drawStage();save();};
+ $('#seDup').onclick=()=>addFlower(it.t,it.c);
+ $('#seDel').onclick=()=>{snap();S.items=S.items.filter(i=>i!==it);sel=null;drawStage();save();};
+}
+
+function addFlower(t,ci){
+ snap();const def=T[t];
+ const it={id:nextId++,t,c:ci??lastColor[t]??0,s:def.k==='main'?.95+Math.random()*.1:.95+Math.random()*.1,r:def.k==='main'?Math.round((Math.random()-.5)*40):0,v:Math.floor(Math.random()*100),x:0,y:0,placed:false};
+ placeItem(it,S,Math.random);delete it.placed;insertItem(S,it);sel=it.id;drawStage();save();
+ const el=$(`#cv .it[data-id="${it.id}"] .bl`);
+ if(el&&el.animate)el.animate([{transform:'scale(0) rotate(-30deg)',opacity:0},{transform:'scale(1.08)',opacity:1,offset:.7},{transform:'scale(1)'}],{duration:520,easing:'cubic-bezier(.2,.8,.2,1)'});
+}
+
+const TABS=[['main','鲜花'],['filler','配花'],['green','配叶'],['box','包装'],['rb','丝带吊牌'],['bg','背景']];
+function renderTab(){
+ $('#tabs').innerHTML=TABS.map(([k,n])=>`<button data-tab="${k}" class="${k===tab?'on':''}">${n}</button>`).join('');
+ const body=$('#tabbody');
+ if(tab==='main'||tab==='filler'||tab==='green'){
+  const ks=KEYS.filter(k=>T[k].k===tab);
+  const tips={main:'点一下就插进花束；点花束里的花可以换颜色、调大小或移除。',filler:'配花会从花与花之间伸出来，让花束更蓬松。',green:'配叶会自动插在外圈，当作衬底。'};
+  body.innerHTML=`<div class="grid">${ks.map(k=>`<button class="fl" data-t="${k}" title="${T[k].n}：${T[k].lang}"><img src="${thumb(k,lastColor[k]||0)}" alt="" loading="lazy"><span>${T[k].n}</span></button>`).join('')}</div><p class="tip">${tips[tab]}</p>`;
+ }else if(tab==='box'){
+  const m=S.box.m;
+  body.innerHTML=`<div class="seg"><button data-m="w" class="${m==='w'?'on':''}">包装纸</button><button data-m="h" class="${m==='h'?'on':''}">手扎花束</button><button data-m="v" class="${m==='v'?'on':''}">插进花瓶</button></div>`
+  +(m==='w'?`<div class="opts">${WRAPS.map((w,i)=>`<button class="opt ${S.box.w===i?'on':''}" data-w="${i}"><i style="background-image:linear-gradient(135deg,transparent 52%,rgba(255,255,255,.0) 52%),url(${href('tx_'+w.o)})${w.o!==w.i?`;box-shadow:inset -14px -14px 0 -2px #efe6d6`:''}"></i>${w.n}</button>`).join('')}</div>`
+   :m==='h'?`<div class="opts">${HANDS.map((h,i)=>`<button class="opt ${S.box.h===i?'on':''}" data-h="${i}"><i><img src="${href(h.img)}" alt=""></i>${h.n}</button>`).join('')}</div>`
+   :`<div class="opts">${VASES.map((v,i)=>`<button class="opt ${S.box.v===i?'on':''}" data-v="${i}"><i><img src="${href(v.img)}" alt=""></i>${v.n}</button>`).join('')}</div>`);
+ }else if(tab==='rb'){
+  body.innerHTML=(S.box.m==='v'?'<p class="tip">花瓶不系丝带。换成包装纸或手扎花束就可以系了。</p>':`<div class="opts"><button class="opt ${S.rb<0?'on':''}" data-rb="-1"><i style="background:repeating-linear-gradient(45deg,#fff 0 6px,#f3ebe7 6px 12px)"></i>不系</button>${BOWS.map((b,i)=>`<button class="opt ${S.rb===i?'on':''}" data-rb="${i}"><i><img src="${href(b.img)}" alt=""></i>${b.n}</button>`).join('')}</div>`
+  +`<label class="field">吊牌上写点什么（选填，会挂在丝带上）<input id="tgIn" maxlength="14" placeholder="例如：To 小雨 / Day 128" value="${esc(S.tg)}"></label>`);
+  const inp=$('#tgIn');if(inp){inp.addEventListener('focus',snap,{once:true});inp.addEventListener('input',()=>{S.tg=inp.value.trim();drawStage();save();});}
+ }else if(tab==='bg'){
+  body.innerHTML=`<div class="opts">${BGS.map((b,i)=>`<button class="opt ${S.bg===i?'on':''}" data-bg="${i}"><i style="background:radial-gradient(circle at 50% 35%,${b.a},${b.b})"></i>${b.n}</button>`).join('')}</div><p class="tip">背景也会出现在 ta 打开的页面和图片里。</p>`;
+ }
+}
+
+function bindEditor(){
+ const cv=$('#cv');
+ const pt=e=>{const p=cv.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(cv.getScreenCTM().inverse());};
+ cv.addEventListener('pointerdown',e=>{
+  const gEl=e.target.closest('.it');
+  if(!gEl){if(sel!=null)setSel(null);return;}
+  const id=+gEl.dataset.id,it=S.items.find(i=>i.id===id);if(!it)return;
+  const p=pt(e);drag={it,ox:it.x-p.x,oy:it.y-p.y,sx:e.clientX,sy:e.clientY,moved:false};
+  try{cv.setPointerCapture(e.pointerId);}catch(_){}
+  if(sel!==id)setSel(id);
+  e.preventDefault();
+ });
+ let raf=0;
+ cv.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  if(!drag.moved){if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)<4)return;drag.moved=true;snap();}
+  const p=pt(e),g=geo(S);drag.it.x=clamp(p.x+drag.ox,24,376);drag.it.y=clamp(p.y+drag.oy,40,g.ty-40);
+  if(!raf)raf=requestAnimationFrame(()=>{raf=0;if(drag)updateItemDom(drag.it);});
+ });
+ const end=()=>{if(drag){if(drag.moved){updateItemDom(drag.it);save();}drag=null;}};
+ cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+
+ $('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;tab=b.dataset.tab;renderTab();});
+ $('#tabbody').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.t){addFlower(d.t);return;}
+  if(d.m){if(S.box.m===d.m)return;snap();const old=geo(S);S.box.m=d.m;const g=geo(S);for(const it of S.items){it.x+=g.cx-old.cx;it.y+=g.cy-old.cy;}}
+  else if(d.w!==undefined){snap();S.box.w=+d.w;}
+  else if(d.h!==undefined){snap();S.box.h=+d.h;}
+  else if(d.v!==undefined){snap();S.box.v=+d.v;}
+  else if(d.rb!==undefined){snap();S.rb=+d.rb;}
+  else if(d.bg!==undefined){snap();S.bg=+d.bg;applyBg(S.bg);}
+  else return;
+  renderTab();drawStage();save();
+ });
+ $('#bUndo').onclick=undo;
+ $('#bClear').onclick=()=>{if(!S.items.length)return;snap();S.items=[];sel=null;drawStage();save();toast('已清空，点撤销可以找回');};
+ $('#bRandom').onclick=randomBouquet;
+ $('#bOcc').onclick=()=>openModal('mOcc');
+ $('#occList').innerHTML=OCC.map((o,i)=>`<button data-o="${i}"><em>${o.e}</em>${o.n}</button>`).join('');
+ $('#occList').addEventListener('click',e=>{const b=e.target.closest('[data-o]');if(!b)return;const o=OCC[+b.dataset.o];snap();
+  S.box=Object.assign({m:'w',w:0,h:0,v:0},o.box);S.rb=o.rb;S.bg=o.bg;applyBg(S.bg);buildMix(S,o.mix);sel=null;pendingMsg=o.msg;
+  closeModal('mOcc');renderTab();drawStage();save();toast(`已插好一束「${o.n}」，可以接着改`);});
+ $('#bSend').onclick=openSend;
+ $('#bPreview').onclick=()=>{if(!S.items.length){toast('先插几枝花吧');return;}window.open(baseURL()+'#g='+enc(giftFromForm(true)),'_blank');};
+ $('#bSave').onclick=()=>{if(!S.items.length){toast('先插几枝花吧');return;}saveImage(S,giftFromForm(true));};
+ $('#bHist').onclick=openHist;
+ $('#sIdea').onclick=()=>{const cur=$('#sMsg').value;let l;do{l=pick(LINES);}while(l===cur&&LINES.length>1);$('#sMsg').value=l;};
+ $('#sGo').onclick=genLink;
+ $('#sCopy').onclick=async()=>{const ok=await copyText($('#sLink').value,$('#sLink'));toast(ok?'已复制，去微信粘贴给 ta 吧':'复制失败，请长按链接手动复制');};
+ $('#sOpen').onclick=()=>window.open($('#sLink').value,'_blank');
+ $('#sImg').onclick=()=>saveImage(S,giftFromForm());
+ for(const id of ['#sTo','#sFrom','#sMsg','#sDate','#sStart'])$(id).addEventListener('input',()=>{$('#sRes').hidden=true;});
+}
+
+function randomBouquet(){
+ snap();const R=Math.random,sc=pick(SCHEMES);const list=[];
+ const nMain=10+Math.floor(R()*5);for(let i=0;i<nMain;i++){const [t,ck]=pick(sc.mains);list.push([t,ck,T[t].R>40&&list.filter(x=>x[0]===t).length>=2?0:1]);}
+ for(const [t,ck] of sc.fill)list.push([t,ck,2+Math.floor(R()*2)]);
+ for(const [t,ck] of sc.green)list.push([t,ck,2+Math.floor(R()*2)]);
+ const r=R();if(r<.6)S.box={m:'w',w:Math.floor(R()*WRAPS.length),h:S.box.h|0,v:S.box.v|0};else if(r<.85)S.box={m:'h',w:S.box.w|0,h:Math.floor(R()*HANDS.length),v:S.box.v|0};else S.box={m:'v',w:S.box.w|0,h:S.box.h|0,v:Math.floor(R()*VASES.length)};
+ S.rb=S.box.m==='h'&&S.box.h===0?-1:Math.floor(R()*BOWS.length);S.bg=Math.floor(R()*(BGS.length-1));applyBg(S.bg);
+ buildMix(S,list.filter(x=>x[2]>0));sel=null;renderTab();drawStage();save();
+}
+
+/* ---------- 发送 ---------- */
+function bouquetTypes(st){const seen=[];for(const it of st.items.slice().reverse())if(T[it.t]&&!seen.includes(it.t))seen.push(it.t);return seen;}
+function openSend(){
+ if(!S.items.length){toast('先插几枝花吧');return;}
+ const prof=store.get('hj.profile',{});
+ if(!$('#sTo').value)$('#sTo').value=prof.to||'';
+ if(!$('#sFrom').value)$('#sFrom').value=prof.from||'';
+ if(!$('#sStart').value)$('#sStart').value=prof.start||'';
+ if(!$('#sMsg').value&&pendingMsg)$('#sMsg').value=pendingMsg;
+ $('#sDate').value=$('#sDate').value||today();
+ const ls=bouquetTypes(S).filter(t=>T[t].k==='main').slice(0,3).map(t=>T[t].lang);
+ $('#sLang').textContent='这束花在说：'+(ls.length?ls.join(' · '):bouquetTypes(S).map(t=>T[t].lang).slice(0,2).join(' · '));
+ $('#sRes').hidden=true;openModal('mSend');
+}
+function giftFromForm(loose){
+ const prof=store.get('hj.profile',{});
+ const to=($('#sTo').value||'').trim()||(loose?prof.to||'':''),f=($('#sFrom').value||'').trim()||(loose?prof.from||'':''),m=($('#sMsg').value||'').trim()||(loose?pendingMsg:'');
+ const d=$('#sDate').value||today(),start=$('#sStart').value||(loose?prof.start||'':'');
+ return Object.assign(compact(S),{to,m,f,d,n:dayN(start,d)});
+}
+function genLink(){
+ const g=giftFromForm();
+ if(!g.to){toast('写一下 ta 的名字吧');$('#sTo').focus();return;}
+ store.set('hj.profile',{to:g.to,from:g.f,start:$('#sStart').value||''});
+ const url=baseURL()+'#g='+enc(g);
+ $('#sLink').value=url;$('#sRes').hidden=false;
+ const hist=store.get('hj2.hist',[]).filter(h=>h.url!==url);hist.unshift({url,to:g.to,m:g.m,d:g.d,at:Date.now()});store.set('hj2.hist',hist.slice(0,120));
+ setTimeout(()=>$('#sRes').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+}
+function openHist(){
+ const hist=store.get('hj2.hist',[]);const box=$('#hList');
+ if(!hist.length){box.innerHTML='<div class="empty" style="grid-column:1/-1">还没有送出过花。<br>做好一束，点「送出去」就会出现在这里。</div>';openModal('mHist');return;}
+ box.innerHTML=hist.map((h,i)=>{let svg='';try{const st=expand(dec(h.url.split('#g=')[1]));const b=BGS[st.bg]||BGS[0];svg=`<svg viewBox="0 0 400 520" style="background:radial-gradient(circle at 50% 35%,${b.a},${b.b})">${bouquetSVG(st,{inner:true})}</svg>`;}catch(e){}
+  return `<div class="hcard"><div class="th">${svg}</div><b>${esc(h.to)} · ${esc((h.d||'').slice(5).replace('-','/'))}</b><p>${esc(h.m||'')}</p><div class="hb"><button data-hc="${i}">复制</button><button data-ho="${i}">打开</button><button data-he="${i}">再改</button></div></div>`;}).join('');
+ box.onclick=async e=>{const b=e.target.closest('button');if(!b)return;const h=hist[+(b.dataset.hc??b.dataset.ho??b.dataset.he)];if(!h)return;
+  if(b.dataset.hc!==undefined){const ok=await copyText(h.url);toast(ok?'已复制链接':'复制失败');}
+  else if(b.dataset.ho!==undefined)window.open(h.url,'_blank');
+  else{try{snap();S=expand(dec(h.url.split('#g=')[1]));for(const it of S.items)it.id=nextId++;sel=null;applyBg(S.bg);renderTab();drawStage();save();closeModal('mHist');toast('已载入这束花');}catch(err){toast('这条记录打不开了');}}};
+ openModal('mHist');
+}
+
+function initEditor(){
+ $('#editor').hidden=false;
+ const dr=store.get('hj2.draft',null);
+ if(dr&&dr.S&&Array.isArray(dr.S.items)){S=Object.assign(newState(),dr.S);S.box=Object.assign({m:'w',w:0,h:0,v:0},S.box);S.items=S.items.filter(i=>T[i.t]);nextId=Math.max(dr.nextId||1,...S.items.map(i=>i.id+1),1);}else S=newState();
+ const r=readParam('r');
+ if(r){try{const x=dec(r);const prof=store.get('hj.profile',{});store.set('hj.profile',Object.assign(prof,{to:x.to||'',from:x.f||''}));}catch(e){}history.replaceState(null,'',baseURL());}
+ applyBg(S.bg);$('#bUndo').disabled=true;renderTab();drawStage();bindEditor();
+ if(!S.items.length&&!dr){const o=OCC[3];S.box=Object.assign({m:'w',w:0,h:0,v:0},o.box);S.rb=o.rb;S.bg=o.bg;applyBg(S.bg);buildMix(S,o.mix);renderTab();drawStage();}
+}
+
+/* ================================================================
+   收花页
+================================================================ */
+function initViewer(g){
+ const st=expand(g);
+ $('#viewer').hidden=false;applyBg(st.bg);
+ document.title=g.to?`一束花，送给${g.to}`:'有人送你一束花';
+ $('#cvName').textContent=g.to||'你';
+ $('#cvFrom').textContent=g.f?`来自 ${g.f}`:'';
+ $('#cvDate').textContent=fmtDate(g.d)+(g.n?` · 第 ${g.n} 天`:'');
+ const heroIt=st.items.filter(i=>T[i.t].k==='main').pop();
+ if(heroIt)$('#cvSeal').innerHTML=`<img src="${thumb(heroIt.t,heroIt.c)}" alt="">`;
+ $('#vTo').textContent=g.to?`亲爱的${g.to}：`:'';$('#vTo').hidden=!g.to;
+ $('#vFrom').textContent=g.f?`— ${g.f}`:'';
+ $('#vDate').textContent=fmtDate(g.d)+(g.n?` · 第 ${g.n} 天`:'');
+ const types=bouquetTypes(st).reverse();
+ $('#vLangs').innerHTML=types.map(t=>{const it=st.items.find(i=>i.t===t);return `<div><img src="${thumb(t,it?it.c:0)}" alt=""><span><b>${T[t].n}</b>${T[t].lang}</span></div>`;}).join('');
+ $('#vLangBtn').onclick=()=>{const l=$('#vLangs');l.hidden=!l.hidden;$('#vLangBtn').textContent=l.hidden?'这束花的花语 ›':'收起花语';};
+ const svg=$('#vcv');
+ const card={to:g.to,m:g.m,f:g.f,d:g.d,n:g.n};
+ $('#vSave').onclick=()=>saveImage(st,card);
+ $('#vReply').onclick=()=>{location.href=baseURL()+'#r='+enc({to:g.f||'',f:g.to||''});setTimeout(()=>location.reload(),30);};
+ $('#vReply').hidden=!g.f;
+ $('#vReplay').onclick=()=>play(svg,st,g,true);
+ preload(usedAssets(st).concat(['petal_red','petal_pink','petal_white'].filter(i=>MAN[i]))).then(()=>{svg.innerHTML=bouquetSVG(st,{inner:true});const b=$('#cvOpen');b.disabled=false;b.textContent='打开看看';
+  if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)&&readParam('auto'))setTimeout(()=>b.click(),300);});
+ $('#cvOpen').onclick=()=>{$('#cover').classList.add('out');setTimeout(()=>{$('#cover').hidden=true;},900);setTimeout(()=>play(svg,st,g,false),250);};
+}
+let typing=null;
+function play(svg,st,g,replay){
+ const card=$('#vcard');card.classList.remove('show');$('#vActs').classList.remove('show');$('#vReplay').hidden=true;
+ if(replay){svg.innerHTML=bouquetSVG(st,{inner:true});window.scrollTo({top:0,behavior:'smooth'});}
+ $('#vMsg').textContent='';clearInterval(typing);
+ const colors=st.items.filter(i=>T[i.t].k==='main').map(i=>(T[i.t].cs[i.c]||T[i.t].cs[0])[2]);
+ bloom(svg,st,()=>{
+  card.classList.add('show');
+  const chars=[...(g.m||'')];let i=0;const msg=$('#vMsg');const cur='<span class="cur"></span>';const step=chars.length>80?28:65;
+  typing=setInterval(()=>{i++;msg.innerHTML=esc(chars.slice(0,i).join(''))+(i<chars.length?cur:'');if(i>=chars.length){clearInterval(typing);setTimeout(()=>{$('#vActs').classList.add('show');$('#vReplay').hidden=false;},300);}},step);
+  if(!chars.length){clearInterval(typing);$('#vActs').classList.add('show');$('#vReplay').hidden=false;}
+ },()=>{const cs=colors.length?colors:['#efa3b3'];petals(cs,30,false);petals(cs,8,true);});
+}
+function bloom(svg,st,onDone,onPetals){
+ svg.classList.add('pre');
+ requestAnimationFrame(()=>{
+  svg.classList.remove('pre');
+  const A=(el,kf,opt)=>el&&el.animate?el.animate(kf,Object.assign({fill:'backwards',easing:'cubic-bezier(.22,.8,.24,1)'},opt)):null;
+  const up=[{opacity:0,transform:'translateY(26px) scale(.94)'},{opacity:1,transform:'none'}];
+  $$('.wb,.vf,.sb',svg).forEach(el=>A(el,up,{duration:800}));
+  $$('.wf',svg).forEach(el=>A(el,up,{duration:800,delay:140}));
+  $$('.gp',svg).forEach(el=>A(el,[{opacity:0},{opacity:1}],{duration:900,delay:200}));
+  $$('.lc',svg).forEach(el=>A(el,[{opacity:0},{opacity:0,offset:.35},{opacity:1}],{duration:2600,delay:400,easing:'ease-in'}));
+  let t=420,firstMain=-1;
+  const els=[...$$('.gs .it',svg),...$$('.fs .it',svg),...$$('.hs .it',svg)];
+  for(const el of els){
+   const it=st.items.find(i=>i.id===+el.dataset.id);if(!it)continue;const k=T[it.t].k;const bl=el.firstElementChild;
+   if(k==='main'){if(firstMain<0)firstMain=t;A(bl,[{opacity:0,transform:'scale(.15) rotate(-28deg)'},{opacity:1,transform:'scale(1.06) rotate(3deg)',offset:.65},{opacity:1,transform:'scale(1) rotate(0deg)'}],{duration:950,delay:t});t+=150;}
+   else{A(bl,[{opacity:0,transform:'scale(.4) rotate(-10deg)'},{opacity:1,transform:'scale(1) rotate(0deg)'}],{duration:800,delay:t});t+=k==='filler'?80:60;}
+  }
+  const end=t+800;
+  $$('.rb',svg).forEach(el=>A(el,[{opacity:0,transform:'scale(0)'},{opacity:1,transform:'scale(1.1)',offset:.7},{opacity:1,transform:'scale(1)'}],{duration:650,delay:end-650}));
+  $$('.tag',svg).forEach(el=>A(el,[{opacity:0,transform:'rotate(-28deg)'},{opacity:1,transform:'rotate(9deg)',offset:.45},{opacity:1,transform:'rotate(-4deg)',offset:.75},{opacity:1,transform:'rotate(0deg)'}],{duration:1300,delay:end-300}));
+  setTimeout(onPetals,(firstMain<0?600:firstMain)+500);
+  setTimeout(onDone,end+150);
+ });
+}
+function petalAsset(hex){const n=parseInt(hex.slice(1),16),r=(n>>16)&255,g=(n>>8)&255,b=n&255,l=(r*.3+g*.59+b*.11)/255;
+ const id=l>.78?'petal_white':(r>g*1.6&&r>b*1.4&&l<.5)?'petal_red':(r>=b?'petal_pink':'petal_white');return MAN[id]?id:null;}
+function petals(colors,n,loop){
+ const box=$('#petals');
+ for(let i=0;i<n;i++){const cc=colors[i%colors.length],sz=.65+Math.random()*.75,pa=petalAsset(cc);
+  const d=document.createElement(pa?'img':'i');d.className='petal';
+  if(pa){d.src=ASSET+MAN[pa].f;d.alt='';}
+  d.style.cssText=`left:${Math.random()*100}vw;width:${(pa?20:12)*sz}px;height:${(pa?20*MAN[pa].h/MAN[pa].w:15)*sz}px;${pa?'border-radius:0;box-shadow:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.18));':`background:linear-gradient(135deg,${mix(cc,'#ffffff',.3)},${cc});`}animation-duration:${(loop?8:5)+Math.random()*5}s;animation-delay:${Math.random()*(loop?10:1.8)}s;${loop?'animation-iteration-count:infinite;':''}--dx:${((Math.random()-.5)*200).toFixed(0)}px;--rot:${(Math.random()*720-360).toFixed(0)}deg`;
+  if(!loop)d.addEventListener('animationend',()=>d.remove());box.appendChild(d);}
+}
+
+/* ================= 启动 ================= */
+async function boot(){
+ MAN=window.__MANIFEST__||{};
+ if(!Object.keys(MAN).length){try{MAN=await (await fetch(ASSET+'manifest.json',{cache:'no-cache'})).json();}catch(e){MAN={};}}
+ if(!Object.keys(MAN).length)toast('花材素材没加载出来，检查一下 assets 文件夹是否和页面放在一起');
+ $('#gdefsIn').innerHTML=defsStr();
+ const gp=readParam('g');
+ if(gp){try{const g=dec(gp);if(g&&Array.isArray(g.i)){initViewer(g);return;}}catch(e){console.error(e);}toast('这个链接好像不完整，先帮你打开插花台');}
+ initEditor();
+}
+window.addEventListener('hashchange',()=>{if(readParam('g'))location.reload();});
+if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname))window.__hj={OCC,SCHEMES,buildMix,renderPNG,compact,enc,newState,get S(){return S;},set S(v){S=v;},drawStage,applyBg,renderTab,randomBouquet:()=>randomBouquet()};
+boot();
+})();
+</script>
+</body>
+</html>
