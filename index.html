@@ -262,7 +262,7 @@ img{-webkit-user-drag:none;user-select:none}
       <button class="btn ghost" id="sOpen">预览</button>
       <button class="btn ghost" id="sImg">保存图片</button>
     </div>
-    <p class="sub">粘贴到微信发给 ta 就行，或者贴进邮件正文。所有内容都在链接里，不经过任何服务器。</p>
+    <p class="sub">点「复制链接」后粘贴到微信发给 ta（别复制浏览器地址栏，那是插花页）。链接里带着 <b>?g=</b> 才是这束花。</p>
   </div>
 </div></div>
 
@@ -306,7 +306,7 @@ const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(M
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
 const UA=navigator.userAgent,isWeChat=/MicroMessenger/i.test(UA),isMobile=/iPhone|iPad|iPod|Android|Mobile/i.test(UA);
-let toastT;function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+let toastT;function toast(msg,ms=2200){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),ms);}
 const pad=n=>String(n).padStart(2,'0');
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;};
 const WEEK='日一二三四五六';
@@ -552,12 +552,17 @@ const SCHEMES=[
 
 /* ================= 链接编码 ================= */
 function enc(obj){const bytes=new TextEncoder().encode(JSON.stringify(obj));let bin='';for(let i=0;i<bytes.length;i+=4096)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+4096));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
-function dec(str){str=decodeURIComponent(str).replace(/-/g,'+').replace(/_/g,'/');while(str.length%4)str+='=';const bin=atob(str);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return JSON.parse(new TextDecoder().decode(bytes));}
+function dec(str){str=decodeURIComponent(str).replace(/\s/g,'').replace(/-/g,'+').replace(/_/g,'/');while(str.length%4)str+='=';const bin=atob(str);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return JSON.parse(new TextDecoder().decode(bytes));}
 const baseURL=()=>location.href.split('#')[0].split('?')[0];
 const MODES=['w','h','v'];
 function compact(st){return{v:2,i:st.items.filter(it=>T[it.t]).map(it=>[it.t,it.c,Math.round(it.x),Math.round(it.y),Math.round(it.s*100),Math.round(it.r||0),it.v|0]),b:[MODES.indexOf(st.box.m),st.box.w|0,st.box.h|0,st.box.v|0],rb:st.rb,tg:st.tg||'',bg:st.bg|0};}
 function expand(g){let id=1;const b=g.b||[0,0,0,0];return{items:(g.i||[]).filter(a=>T[a[0]]).map(a=>({id:id++,t:a[0],c:a[1]|0,x:+a[2]||200,y:+a[3]||200,s:(a[4]||100)/100,r:a[5]|0,v:a[6]|0})),box:{m:MODES[b[0]]||'w',w:b[1]|0,h:b[2]|0,v:b[3]|0},rb:g.rb===undefined?0:g.rb,tg:g.tg||'',bg:g.bg|0};}
-function readParam(name){const h=location.hash.replace(/^#/,''),q=location.search.replace(/^\?/,'');for(const part of (h+'&'+q).split('&')){const i=part.indexOf('=');if(i>0&&part.slice(0,i)===name)return part.slice(i+1);}return null;}
+/* 花束数据放在 ?g= 里：微信打开链接时常把 # 后面的内容丢掉，问号后面的参数会保留。旧的 #g= 链接也照样能读 */
+function urlParam(url,name){const s=String(url||''),hi=s.indexOf('#'),qi=s.indexOf('?');
+ const q=qi>=0?s.slice(qi+1,hi>qi?hi:undefined):'',h=hi>=0?s.slice(hi+1):'';
+ for(const part of (q+'&'+h).split('&')){const i=part.indexOf('=');if(i>0&&part.slice(0,i)===name)return part.slice(i+1);}return null;}
+const readParam=name=>urlParam(location.href,name);
+const giftURL=g=>baseURL()+'?g='+enc(g);
 
 /* ================= 背景 ================= */
 function applyBg(i){const b=BGS[i]||BGS[0];document.body.style.setProperty('--bga',b.a);document.body.style.setProperty('--bgb',b.b);document.body.classList.toggle('dark',!!b.dark);const m=document.querySelector('meta[name=theme-color]');if(m)m.content=b.a;}
@@ -738,7 +743,7 @@ function bindEditor(){
   S.box=Object.assign({m:'w',w:0,h:0,v:0},o.box);S.rb=o.rb;S.bg=o.bg;applyBg(S.bg);buildMix(S,o.mix);sel=null;pendingMsg=o.msg;
   closeModal('mOcc');renderTab();drawStage();save();toast(`已插好一束「${o.n}」，可以接着改`);});
  $('#bSend').onclick=openSend;
- $('#bPreview').onclick=()=>{if(!S.items.length){toast('先插几枝花吧');return;}window.open(baseURL()+'#g='+enc(giftFromForm(true)),'_blank');};
+ $('#bPreview').onclick=()=>{if(!S.items.length){toast('先插几枝花吧');return;}window.open(giftURL(giftFromForm(true)),'_blank');};
  $('#bSave').onclick=()=>{if(!S.items.length){toast('先插几枝花吧');return;}saveImage(S,giftFromForm(true));};
  $('#bHist').onclick=openHist;
  $('#sIdea').onclick=()=>{const cur=$('#sMsg').value;let l;do{l=pick(LINES);}while(l===cur&&LINES.length>1);$('#sMsg').value=l;};
@@ -783,7 +788,7 @@ function genLink(){
  const g=giftFromForm();
  if(!g.to){toast('写一下 ta 的名字吧');$('#sTo').focus();return;}
  store.set('hj.profile',{to:g.to,from:g.f,start:$('#sStart').value||''});
- const url=baseURL()+'#g='+enc(g);
+ const url=giftURL(g);
  $('#sLink').value=url;$('#sRes').hidden=false;
  const hist=store.get('hj2.hist',[]).filter(h=>h.url!==url);hist.unshift({url,to:g.to,m:g.m,d:g.d,at:Date.now()});store.set('hj2.hist',hist.slice(0,120));
  setTimeout(()=>$('#sRes').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
@@ -791,12 +796,12 @@ function genLink(){
 function openHist(){
  const hist=store.get('hj2.hist',[]);const box=$('#hList');
  if(!hist.length){box.innerHTML='<div class="empty" style="grid-column:1/-1">还没有送出过花。<br>做好一束，点「送出去」就会出现在这里。</div>';openModal('mHist');return;}
- box.innerHTML=hist.map((h,i)=>{let svg='';try{const st=expand(dec(h.url.split('#g=')[1]));const b=BGS[st.bg]||BGS[0];svg=`<svg viewBox="0 0 400 520" style="background:radial-gradient(circle at 50% 35%,${b.a},${b.b})">${bouquetSVG(st,{inner:true})}</svg>`;}catch(e){}
+ box.innerHTML=hist.map((h,i)=>{let svg='';try{const st=expand(dec(urlParam(h.url,'g')));const b=BGS[st.bg]||BGS[0];svg=`<svg viewBox="0 0 400 520" style="background:radial-gradient(circle at 50% 35%,${b.a},${b.b})">${bouquetSVG(st,{inner:true})}</svg>`;}catch(e){}
   return `<div class="hcard"><div class="th">${svg}</div><b>${esc(h.to)} · ${esc((h.d||'').slice(5).replace('-','/'))}</b><p>${esc(h.m||'')}</p><div class="hb"><button data-hc="${i}">复制</button><button data-ho="${i}">打开</button><button data-he="${i}">再改</button></div></div>`;}).join('');
  box.onclick=async e=>{const b=e.target.closest('button');if(!b)return;const h=hist[+(b.dataset.hc??b.dataset.ho??b.dataset.he)];if(!h)return;
   if(b.dataset.hc!==undefined){const ok=await copyText(h.url);toast(ok?'已复制链接':'复制失败');}
   else if(b.dataset.ho!==undefined)window.open(h.url,'_blank');
-  else{try{snap();S=expand(dec(h.url.split('#g=')[1]));for(const it of S.items)it.id=nextId++;sel=null;applyBg(S.bg);renderTab();drawStage();save();closeModal('mHist');toast('已载入这束花');}catch(err){toast('这条记录打不开了');}}};
+  else{try{snap();S=expand(dec(urlParam(h.url,'g')));for(const it of S.items)it.id=nextId++;sel=null;applyBg(S.bg);renderTab();drawStage();save();closeModal('mHist');toast('已载入这束花');}catch(err){toast('这条记录打不开了');}}};
  openModal('mHist');
 }
 
@@ -831,7 +836,7 @@ function initViewer(g){
  const svg=$('#vcv');
  const card={to:g.to,m:g.m,f:g.f,d:g.d,n:g.n};
  $('#vSave').onclick=()=>saveImage(st,card);
- $('#vReply').onclick=()=>{location.href=baseURL()+'#r='+enc({to:g.f||'',f:g.to||''});setTimeout(()=>location.reload(),30);};
+ $('#vReply').onclick=()=>{location.href=baseURL()+'?r='+enc({to:g.f||'',f:g.to||''});};
  $('#vReply').hidden=!g.f;
  $('#vReplay').onclick=()=>play(svg,st,g,true);
  preload(usedAssets(st).concat(['petal_red','petal_pink','petal_white'].filter(i=>MAN[i]))).then(()=>{svg.innerHTML=bouquetSVG(st,{inner:true});const b=$('#cvOpen');b.disabled=false;b.textContent='打开看看';
@@ -893,7 +898,7 @@ async function boot(){
  if(!Object.keys(MAN).length)toast('花材素材没加载出来，检查一下 assets 文件夹是否和页面放在一起');
  $('#gdefsIn').innerHTML=defsStr();
  const gp=readParam('g');
- if(gp){try{const g=dec(gp);if(g&&Array.isArray(g.i)){initViewer(g);return;}}catch(e){console.error(e);}toast('这个链接好像不完整，先帮你打开插花台');}
+ if(gp){try{const g=dec(gp);if(g&&Array.isArray(g.i)){initViewer(g);return;}}catch(e){console.error(e);}toast('这个花束链接不完整，可能复制时少了一截，请重新复制完整链接',6000);}
  initEditor();
 }
 window.addEventListener('hashchange',()=>{if(readParam('g'))location.reload();});
